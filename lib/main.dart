@@ -4,6 +4,7 @@ import 'dart:io' show File;
 import 'dart:math';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const CivicAgentApp());
@@ -466,6 +467,51 @@ final List<SampleIncident> sampleIncidents = [
     photoUrl: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?w=800',
   ),
 ];
+
+// ==========================================
+// CAMERA & GALLERY PHOTO PICKER HELPER
+// ==========================================
+
+Future<SampleIncident?> pickCivicPhoto({
+  required BuildContext context,
+  required ImageSource source,
+}) async {
+  try {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      maxWidth: 1920,
+      maxHeight: 1080,
+      imageQuality: 85,
+    );
+    if (picked == null) return null;
+
+    final isCamera = source == ImageSource.camera;
+    return SampleIncident(
+      key: 'user-${DateTime.now().millisecondsSinceEpoch}',
+      title: isCamera ? 'Live Camera Capture' : 'Gallery Upload Evidence',
+      issueCategory: 'Pothole & Broken Asphalt',
+      defaultArea: 'Ahmedabad Municipal Area',
+      description: 'Reported incident with photographic evidence captured via user device (${isCamera ? "Camera" : "Gallery"}).',
+      severity: 'High',
+      departmentKey: 'pothole',
+      icon: isCamera ? Icons.photo_camera_rounded : Icons.photo_library_rounded,
+      accentColor: CivicColors.primary,
+      gpsCoords: '23.0338° N, 72.5467° E (Live GPS)',
+      photoUrl: picked.path,
+    );
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open ${source == ImageSource.camera ? "camera" : "gallery"}: $e'),
+          backgroundColor: CivicColors.error,
+        ),
+      );
+    }
+    return null;
+  }
+}
 
 // ==========================================
 // AGENT TOOL CALL MODELS
@@ -1731,6 +1777,147 @@ class HomeScreen extends StatelessWidget {
   }
 
   void _openCameraSimulationModal(BuildContext context, SampleIncident incident) {
+    _showPhotoCaptureSheet(context, initialIncident: incident);
+  }
+
+  void _showPhotoCaptureSheet(BuildContext context, {SampleIncident? initialIncident}) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: CivicColors.primary.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 22),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Snap & Report Issue',
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Capture live hazard with your camera or select an inspection photo from gallery.',
+                  style: TextStyle(fontSize: 12.5, color: CivicColors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 16),
+
+                // 1. Camera Option Tile
+                ListTile(
+                  tileColor: CivicColors.surfaceContainer.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: CivicColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 22),
+                  ),
+                  title: const Text('Open Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Capture live photo of pothole, garbage, or streetlight', style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final photo = await pickCivicPhoto(context: context, source: ImageSource.camera);
+                    if (photo != null && context.mounted) {
+                      _showInspectionViewfinderModal(context, photo);
+                    }
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                // 2. Gallery Option Tile
+                ListTile(
+                  tileColor: CivicColors.surfaceContainer.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: CivicColors.secondary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 22),
+                  ),
+                  title: const Text('Upload from Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Select existing evidence photo from device album', style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final photo = await pickCivicPhoto(context: context, source: ImageSource.gallery);
+                    if (photo != null && context.mounted) {
+                      _showInspectionViewfinderModal(context, photo);
+                    }
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // 3. Preset Simulation Option (for Emulators / Testing)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Or try a demo scenario:', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: CivicColors.onSurfaceVariant)),
+                    TextButton(
+                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showInspectionViewfinderModal(context, initialIncident ?? sampleIncidents[0]);
+                      },
+                      child: const Text('Use Simulation', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: sampleIncidents.map((s) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ActionChip(
+                          avatar: Icon(s.icon, size: 14, color: s.accentColor),
+                          label: Text(s.title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _showInspectionViewfinderModal(context, s);
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showInspectionViewfinderModal(BuildContext context, SampleIncident incident) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1757,7 +1944,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       const Text(
-                        'AI Camera Capture',
+                        'AI Camera Viewfinder',
                         style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
                       ),
                     ],
@@ -1770,7 +1957,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Simulating photo attachment & geotagging...',
+                'Photo attached with live geotagging and HUD reticle.',
                 style: TextStyle(fontSize: 12, color: CivicColors.onSurfaceVariant),
               ),
               const SizedBox(height: 16),
@@ -1791,12 +1978,15 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showPhotoCaptureSheet(context, initialIncident: incident);
+                      },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Retake', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text('Retake / Change', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2447,11 +2637,17 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
                         ),
                       ),
                     ),
+                    // Quick Camera Button
                     IconButton(
-                      icon: const Icon(Icons.attach_file, color: CivicColors.onSurfaceVariant, size: 20),
-                      onPressed: () {
-                        _handleUserMessage('', samplePhoto: sampleIncidents[1]);
-                      },
+                      icon: const Icon(Icons.camera_alt_rounded, color: CivicColors.primary, size: 21),
+                      tooltip: 'Take Photo with Camera',
+                      onPressed: _openCameraFromChat,
+                    ),
+                    // Attachment / Gallery / Document Picker Button
+                    IconButton(
+                      icon: const Icon(Icons.attach_file_rounded, color: CivicColors.onSurfaceVariant, size: 20),
+                      tooltip: 'Upload from Gallery or Documents',
+                      onPressed: _showChatAttachmentOptions,
                     ),
                   ],
                 ),
@@ -2468,6 +2664,139 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _openCameraFromChat() async {
+    final photo = await pickCivicPhoto(context: context, source: ImageSource.camera);
+    if (photo != null) {
+      _handleUserMessage('Reporting civic hazard with captured photo', samplePhoto: photo);
+    }
+  }
+
+  Future<void> _openGalleryFromChat() async {
+    final photo = await pickCivicPhoto(context: context, source: ImageSource.gallery);
+    if (photo != null) {
+      _handleUserMessage('Reporting civic hazard with gallery photo', samplePhoto: photo);
+    }
+  }
+
+  void _showChatAttachmentOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Attach Civic Evidence',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: CivicColors.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, color: CivicColors.primary, size: 22),
+                  ),
+                  title: const Text('Take Photo from Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Capture live pothole, garbage, or streetlight evidence', style: TextStyle(fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openCameraFromChat();
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: CivicColors.secondary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: CivicColors.secondary, size: 22),
+                  ),
+                  title: const Text('Upload Photo from Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Select existing incident photo from your phone gallery', style: TextStyle(fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openGalleryFromChat();
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: CivicColors.tertiary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.picture_as_pdf_rounded, color: CivicColors.tertiary, size: 22),
+                  ),
+                  title: const Text('Attach Incident Document / PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text('Attach municipal complaint notice or inspection document', style: TextStyle(fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    final pdfIncident = SampleIncident(
+                      key: 'pdf-${DateTime.now().millisecondsSinceEpoch}',
+                      title: 'Municipal Notice / PDF Document',
+                      issueCategory: 'Pothole & Broken Asphalt',
+                      defaultArea: 'Ahmedabad Municipal Area',
+                      description: 'Citizen attached official inspection PDF document for verification.',
+                      severity: 'High',
+                      departmentKey: 'pothole',
+                      icon: Icons.picture_as_pdf_rounded,
+                      accentColor: CivicColors.tertiary,
+                      gpsCoords: '23.0338° N, 72.5467° E (Document Ref)',
+                      photoUrl: sampleIncidents[0].photoUrl,
+                    );
+                    _handleUserMessage('Attached municipal inspection PDF document', samplePhoto: pdfIncident);
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Divider(),
+                const SizedBox(height: 6),
+                const Text('Quick Test Scenarios (Demo Presets):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: CivicColors.onSurfaceVariant)),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: sampleIncidents.map((s) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ActionChip(
+                          avatar: Icon(s.icon, size: 14, color: s.accentColor),
+                          label: Text(s.title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _handleUserMessage('Reporting issue from photo evidence', samplePhoto: s);
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
