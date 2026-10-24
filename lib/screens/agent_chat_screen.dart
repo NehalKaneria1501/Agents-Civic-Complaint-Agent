@@ -252,10 +252,12 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Column(
       children: [
-        // Header Agent Context Banner
-        _buildContextBanner(),
+        // Header Agent Context Banner (collapses when keyboard is active to prevent squashing)
+        if (!isKeyboardOpen) _buildContextBanner(),
 
         // Chat Message List
         Expanded(
@@ -288,8 +290,8 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
             ),
           ),
 
-        // Quick Suggestion Pills
-        _buildSuggestionPills(),
+        // Quick Suggestion Pills (shown when keyboard is dismissed)
+        if (!isKeyboardOpen) _buildSuggestionPills(),
 
         // Chat Input Bar
         _buildInputBar(),
@@ -618,6 +620,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
                     Expanded(
                       child: TextField(
                         controller: _textController,
+                        onTap: () => Future.delayed(const Duration(milliseconds: 250), _scrollToBottom),
                         onSubmitted: (val) => _handleUserMessage(val),
                         decoration: const InputDecoration(
                           hintText: 'Message CivicBot...',

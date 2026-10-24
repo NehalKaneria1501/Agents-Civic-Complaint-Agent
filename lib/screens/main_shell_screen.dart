@@ -31,10 +31,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: _buildStitchTopAppBar(),
       body: _buildCurrentScreen(),
-      bottomNavigationBar: _buildStitchBottomNavBar(),
+      bottomNavigationBar: isKeyboardOpen ? null : _buildStitchBottomNavBar(),
     );
   }
 

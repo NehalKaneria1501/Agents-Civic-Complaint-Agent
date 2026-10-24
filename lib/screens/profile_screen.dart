@@ -1,9 +1,14 @@
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../models/civic_models.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_app_logo.dart';
 
 // ==========================================
 // SCREEN: PROFILE SCREEN
+// Includes dynamic Edit Profile and Camera/Gallery Photo Picker
 // ==========================================
 
 class ProfileScreen extends StatefulWidget {
@@ -24,29 +29,353 @@ class _ProfileScreenState extends State<ProfileScreen> {
   VoidCallback? get onSignOut => widget.onSignOut;
   VoidCallback? get onManagePermissions => widget.onManagePermissions;
 
+  // Citizen Profile State
+  String _citizenName = 'Nehal Kaneria';
+  String _activeWard = 'Ward 4 (Navrangpura/Central District, AMC)';
+  String _phone = '+91 98765 43210';
+  String _email = 'nehal.kaneria@ahmedabadcity.gov.in';
+  String _registeredArea = 'Navrangpura CG Road & Vastrapur';
+  String? _profilePhotoPath;
+
+  Future<void> _pickProfilePhoto(ImageSource source) async {
+    try {
+      final photo = await pickCivicPhoto(context: context, source: source);
+      if (photo != null) {
+        setState(() {
+          _profilePhotoPath = photo.photoUrl;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✓ Profile photo updated from ${source == ImageSource.camera ? "camera" : "gallery"}!'),
+              backgroundColor: CivicColors.primary,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not set profile photo: $e'), backgroundColor: CivicColors.error),
+        );
+      }
+    }
+  }
+
+  void _showPhotoOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Change Profile Picture', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: CivicColors.onSurface)),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: CivicColors.primary,
+                    child: Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
+                  ),
+                  title: const Text('Take Photo from Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                  subtitle: const Text('Capture a live citizen profile picture', style: TextStyle(fontSize: 11.5)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickProfilePhoto(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: CivicColors.secondary,
+                    child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
+                  ),
+                  title: const Text('Choose Photo from Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                  subtitle: const Text('Select existing photo from phone gallery', style: TextStyle(fontSize: 11.5)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickProfilePhoto(ImageSource.gallery);
+                  },
+                ),
+                if (_profilePhotoPath != null)
+                  ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: CivicColors.errorContainer,
+                      child: Icon(Icons.delete_outline_rounded, color: CivicColors.error, size: 20),
+                    ),
+                    title: const Text('Remove Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: CivicColors.error)),
+                    subtitle: const Text('Revert to default municipal avatar', style: TextStyle(fontSize: 11.5)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() => _profilePhotoPath = null);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Profile photo reset.')),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditProfileDialog() {
+    final nameCtrl = TextEditingController(text: _citizenName);
+    final phoneCtrl = TextEditingController(text: _phone);
+    final areaCtrl = TextEditingController(text: _registeredArea);
+    final emailCtrl = TextEditingController(text: _email);
+    String selectedWard = _activeWard;
+
+    final wards = [
+      'Ward 4 (Navrangpura/Central District, AMC)',
+      'Ward 8 (Vastrapur/West District, AMC)',
+      'Ward 12 (Bodakdev/North-West, AMC)',
+      'Ward 15 (Paldi/South-West, AMC)',
+      'Ward 21 (Maninagar/South, AMC)',
+      'Ward 32 (Sabarmati/North-West, AMC)',
+      'Ward 42 (Ellisbridge/Central, AMC)',
+    ];
+
+    if (!wards.contains(selectedWard)) {
+      wards.insert(0, selectedWard);
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            final bottomInset = MediaQuery.of(modalCtx).viewInsets.bottom;
+            return Padding(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Edit Citizen Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: CivicColors.onSurface)),
+                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Name
+                    const Text('Citizen Full Name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: CivicColors.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: CivicColors.surfaceLow,
+                        prefixIcon: const Icon(Icons.person_outline, size: 20),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Phone / WhatsApp
+                    const Text('Mobile / WhatsApp Number (SLA Dispatch)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: CivicColors.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: CivicColors.surfaceLow,
+                        prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Ward selector
+                    const Text('Registered Municipal Ward', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: CivicColors.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      initialValue: selectedWard,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: CivicColors.surfaceLow,
+                        prefixIcon: const Icon(Icons.location_city_rounded, size: 20),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                      items: wards.map((w) {
+                        return DropdownMenuItem(
+                          value: w,
+                          child: Text(w, style: const TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setModalState(() => selectedWard = val);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Registered Area
+                    const Text('Street / Locality', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: CivicColors.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: areaCtrl,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: CivicColors.surfaceLow,
+                        prefixIcon: const Icon(Icons.home_work_outlined, size: 20),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            if (nameCtrl.text.trim().isNotEmpty) _citizenName = nameCtrl.text.trim();
+                            if (phoneCtrl.text.trim().isNotEmpty) _phone = phoneCtrl.text.trim();
+                            if (areaCtrl.text.trim().isNotEmpty) _registeredArea = areaCtrl.text.trim();
+                            if (emailCtrl.text.trim().isNotEmpty) _email = emailCtrl.text.trim();
+                            _activeWard = selectedWard;
+                          });
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✓ Profile updated successfully!'),
+                              backgroundColor: CivicColors.primary,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                        label: const Text('Save Profile Changes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: CivicColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          const CircleAvatar(
-            radius: 40,
-            backgroundColor: CivicColors.primary,
-            child: Icon(Icons.person, color: Colors.white, size: 48),
+          // Profile Avatar with Clickable Camera / Gallery Badge
+          Center(
+            child: Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: CivicColors.primary, width: 2.5),
+                  ),
+                  child: CircleAvatar(
+                    radius: 44,
+                    backgroundColor: CivicColors.primary,
+                    backgroundImage: _profilePhotoPath != null
+                        ? (!kIsWeb && File(_profilePhotoPath!).existsSync()
+                            ? FileImage(File(_profilePhotoPath!)) as ImageProvider
+                            : NetworkImage(_profilePhotoPath!))
+                        : null,
+                    child: _profilePhotoPath == null
+                        ? const Icon(Icons.person, color: Colors.white, size: 52)
+                        : null,
+                  ),
+                ),
+                Positioned(
+                  bottom: 2,
+                  right: 2,
+                  child: InkWell(
+                    onTap: _showPhotoOptions,
+                    borderRadius: BorderRadius.circular(18),
+                    child: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: CivicColors.secondary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Citizen Account (Nehal Kaneria)',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+          Text(
+            _citizenName,
+            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
           ),
-          const Text(
-            'Active Ward: Ward 4 (Navrangpura/Central District, AMC)',
-            style: TextStyle(fontSize: 12.5, color: CivicColors.onSurfaceVariant),
+          const SizedBox(height: 2),
+          Text(
+            _activeWard,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12.5, color: CivicColors.onSurfaceVariant),
           ),
-          const SizedBox(height: 20),
-          _buildProfileTile(Icons.notifications_active_outlined, 'SMS / WhatsApp Status Dispatch', 'Enabled (+91 98765 43210)'),
-          _buildProfileTile(Icons.location_on_outlined, 'Registered Area', 'Navrangpura CG Road & Vastrapur'),
+          const SizedBox(height: 14),
+
+          // Edit Profile Action Button
+          OutlinedButton.icon(
+            onPressed: _showEditProfileDialog,
+            icon: const Icon(Icons.edit_rounded, size: 16),
+            label: const Text('Edit Profile & Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: CivicColors.primary,
+              side: const BorderSide(color: CivicColors.primary),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          _buildProfileTile(Icons.phone_android_rounded, 'SMS / WhatsApp Status Dispatch', _phone),
+          _buildProfileTile(Icons.location_on_outlined, 'Registered Area', _registeredArea),
           _buildProfileTile(Icons.verified_user_outlined, 'Citizen Trust Score', 'Level 4 (Verified Citizen)'),
           _buildProfileTile(Icons.help_outline_rounded, 'AMC Municipal Grievance Helpline', '155304 / 1800 233 2330'),
 
@@ -192,3 +521,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+

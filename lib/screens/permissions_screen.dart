@@ -135,32 +135,71 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                     ),
                   ],
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.shield_outlined, color: Colors.white, size: 28),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 360;
+                    if (isCompact) {
+                      return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Allow All Required Permissions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5)),
-                          SizedBox(height: 2),
-                          Text('Recommended for seamless 1-tap complaint filing', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                          const Row(
+                            children: [
+                              Icon(Icons.shield_outlined, color: Colors.white, size: 26),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text('Allow All Required Permissions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Text('Recommended for seamless 1-tap complaint filing', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _grantAll,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: CivicColors.primary,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: Text(allGranted ? 'Granted ✓' : 'Grant All Permissions', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            ),
+                          ),
                         ],
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: _grantAll,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: CivicColors.primary,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: Text(allGranted ? 'Granted ✓' : 'Grant All', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
-                  ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        const Icon(Icons.shield_outlined, color: Colors.white, size: 28),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Allow All Required Permissions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                              SizedBox(height: 2),
+                              Text('Recommended for seamless 1-tap complaint filing', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _grantAll,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: CivicColors.primary,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text(allGranted ? 'Granted ✓' : 'Grant All', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 20),
@@ -262,7 +301,13 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
               children: [
                 Row(
                   children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: CivicColors.onSurface)),
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: CivicColors.onSurface),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     const SizedBox(width: 6),
                     if (value)
                       const Icon(Icons.check_circle, size: 14, color: Color(0xFF10B981)),
