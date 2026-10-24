@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import '../models/civic_models.dart';
 import '../services/amc_database.dart';
 import '../theme/civic_colors.dart';
@@ -9,14 +10,42 @@ import '../widgets/civic_photo_renderer.dart';
 // SCREEN: HOME SCREEN (AMC CIVIC DASHBOARD)
 // ==========================================
 
+class MunicipalServiceSlide {
+  final String title;
+  final String subtitle;
+  final String department;
+  final String category;
+  final String badgeText;
+  final Color badgeColor;
+  final IconData icon;
+  final String metrics;
+  final String? photoUrl;
+  final String sampleIncidentId;
+
+  const MunicipalServiceSlide({
+    required this.title,
+    required this.subtitle,
+    required this.department,
+    required this.category,
+    required this.badgeText,
+    required this.badgeColor,
+    required this.icon,
+    required this.metrics,
+    this.photoUrl,
+    required this.sampleIncidentId,
+  });
+}
+
 class HomeScreen extends StatefulWidget {
   final Function(SampleIncident)? onOpenAgentWithIncident;
   final Function(CivicTicket)? onOpenTicket;
+  final VoidCallback? onOpenFeedback;
 
   const HomeScreen({
     super.key,
     this.onOpenAgentWithIncident,
     this.onOpenTicket,
+    this.onOpenFeedback,
   });
 
   @override
@@ -24,6 +53,83 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _activeSlideIndex = 0;
+
+  static const List<MunicipalServiceSlide> _municipalServices = [
+    MunicipalServiceSlide(
+      title: 'Solid Waste & Door-to-Door Collection',
+      subtitle: '100% daily segregated EV collection across 48 AMC wards & clean Riverfront',
+      department: 'Solid Waste Management',
+      category: 'Solid Waste',
+      badgeText: 'Swachh Bharat AMC',
+      badgeColor: Color(0xFF059669),
+      icon: Icons.delete_sweep_rounded,
+      metrics: '3,800+ MT Daily Collection',
+      photoUrl: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80',
+      sampleIncidentId: 'garbage',
+    ),
+    MunicipalServiceSlide(
+      title: 'Road Infrastructure & Rapid Jetpatcher',
+      subtitle: '24-hour asphalt pothole restoration, pedestrian footpaths & bridge repairs',
+      department: 'Engineering & Roads Dept',
+      category: 'Roads & Potholes',
+      badgeText: 'Vision Zero Roads',
+      badgeColor: Color(0xFFD97706),
+      icon: Icons.add_road_rounded,
+      metrics: '98.4% Potholes Fixed in 24h',
+      photoUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+      sampleIncidentId: 'pothole',
+    ),
+    MunicipalServiceSlide(
+      title: 'Purified Water Supply & Drainage Network',
+      subtitle: '24/7 Narmada treated tap water supply & mechanised storm drainage desilting',
+      department: 'Water & Sewerage Directorate',
+      category: 'Water & Drainage',
+      badgeText: 'Clean Water Mission',
+      badgeColor: Color(0xFF0284C7),
+      icon: Icons.water_drop_rounded,
+      metrics: '1,450 MLD Daily Water Supply',
+      photoUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186f5f8?auto=format&fit=crop&w=800&q=80',
+      sampleIncidentId: 'waterlogging',
+    ),
+    MunicipalServiceSlide(
+      title: 'Automated Smart LED Streetlight Grid',
+      subtitle: '1.5 Lakh centrally monitored smart LED lights with automatic dark-spot alerts',
+      department: 'Streetlight & Electrical Dept',
+      category: 'Street Lighting',
+      badgeText: 'Energy Safe 24/7',
+      badgeColor: Color(0xFF7C3AED),
+      icon: Icons.lightbulb_rounded,
+      metrics: '1,55,000+ Smart Fixtures',
+      photoUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
+      sampleIncidentId: 'streetlight',
+    ),
+    MunicipalServiceSlide(
+      title: 'Urban Public Health & Vector Fogging',
+      subtitle: 'Intensive malaria/dengue vector fogging, anti-larval drives & 82 Health Centers',
+      department: 'Public Health Department',
+      category: 'Public Health',
+      badgeText: 'Healthy City Mission',
+      badgeColor: Color(0xFFE11D48),
+      icon: Icons.local_hospital_rounded,
+      metrics: '82 UHCs & 100% Ward Coverage',
+      photoUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+      sampleIncidentId: 'garbage',
+    ),
+    MunicipalServiceSlide(
+      title: 'Emergency 101 Fire & Disaster Water Rescue',
+      subtitle: 'Rapid 6-minute emergency turnout, hydraulic tower rescues & river rescue boats',
+      department: 'Ahmedabad Fire & Emergency Services',
+      category: 'Fire & Emergency',
+      badgeText: 'Emergency 101',
+      badgeColor: Color(0xFFDC2626),
+      icon: Icons.local_fire_department_rounded,
+      metrics: '6-Minute Average Turnout',
+      photoUrl: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=800&q=80',
+      sampleIncidentId: 'waterlogging',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -35,8 +141,16 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildAgentBanner(),
           const SizedBox(height: 18),
 
+          // Municipal Civic Services Image Slider / Carousel
+          _buildMunicipalServicesSlider(context),
+          const SizedBox(height: 22),
+
           // Hero Snap & Report Card
           _buildHeroCard(context),
+          const SizedBox(height: 18),
+
+          // Direct Feedback & Suggestion / Grievance Portal Banner
+          _buildFeedbackGrievanceBanner(context),
           const SizedBox(height: 24),
 
           // Quick Category Tiles (2x2 Grid)
@@ -120,6 +234,314 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const Icon(Icons.verified, color: CivicColors.primary, size: 22),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMunicipalServicesSlider(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.location_city_rounded, size: 20, color: CivicColors.primary),
+                SizedBox(width: 8),
+                Text(
+                  'Municipal Civic Services',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: CivicColors.onSurface,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: CivicColors.primaryContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'AMC Live Grid',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: CivicColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        CarouselSlider(
+          options: CarouselOptions(
+            height: 195.0,
+            autoPlay: true,
+            autoPlayInterval: const Duration(seconds: 4),
+            autoPlayAnimationDuration: const Duration(milliseconds: 650),
+            autoPlayCurve: Curves.easeInOutCubic,
+            enlargeCenterPage: true,
+            enlargeFactor: 0.16,
+            viewportFraction: 0.94,
+            enableInfiniteScroll: true,
+            onPageChanged: (index, reason) {
+              setState(() {
+                _activeSlideIndex = index;
+              });
+            },
+          ),
+          items: _municipalServices.map((service) {
+            return _buildServiceSlideCard(context, service);
+          }).toList(),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: _municipalServices.asMap().entries.map((entry) {
+            final isSelected = _activeSlideIndex == entry.key;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: isSelected ? 22.0 : 7.0,
+              height: 7.0,
+              margin: const EdgeInsets.symmetric(horizontal: 3.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                color: isSelected ? CivicColors.primary : CivicColors.outlineVariant.withValues(alpha: 0.4),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildServiceSlideCard(BuildContext context, MunicipalServiceSlide service) {
+    return InkWell(
+      onTap: () {
+        final incident = sampleIncidents.firstWhere(
+          (i) => i.key == service.sampleIncidentId,
+          orElse: () => sampleIncidents[0],
+        );
+        _openCameraSimulationModal(context, incident);
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(
+            children: [
+              CivicPhotoRenderer(
+                photoUrl: service.photoUrl,
+                category: service.category,
+                title: service.title,
+                gpsCoords: '23.0225° N, 72.5714° E',
+                height: 195,
+                width: double.infinity,
+                showBadge: false,
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.25),
+                        Colors.black.withValues(alpha: 0.45),
+                        Colors.black.withValues(alpha: 0.88),
+                      ],
+                      stops: const [0.0, 0.4, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: service.badgeColor.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(service.icon, size: 12, color: Colors.white),
+                                const SizedBox(width: 4),
+                                Text(
+                                  service.badgeText,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            child: Text(
+                              service.metrics,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(
+                        service.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        service.subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 11.5,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(
+                            service.department,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: CivicColors.primary,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Report / Grievance',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(width: 3),
+                                Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 11),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeedbackGrievanceBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: CivicColors.surfaceHigh,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CivicColors.outlineVariant.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: CivicColors.secondaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.rate_review_rounded, color: CivicColors.onSecondaryContainer, size: 24),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Feedback & Complaint Form',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: CivicColors.onSurface,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Submit citizen suggestions, service ratings, or formal grievances directly.',
+                  style: TextStyle(fontSize: 11.5, color: CivicColors.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: () {
+              widget.onOpenFeedback?.call();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: CivicColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Open Form', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );

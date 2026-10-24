@@ -241,6 +241,11 @@ class AmcDatabase {
     return newTicket;
   }
 
+  void addTicket(CivicTicket ticket) {
+    tickets.insert(0, ticket);
+    FirestoreService.instance.saveTicket(ticket);
+  }
+
   CivicTicket? fetchStatus(String query) {
     final q = query.trim().toUpperCase();
     for (final ticket in tickets) {

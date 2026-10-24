@@ -26,6 +26,7 @@ export 'screens/tickets_screen.dart';
 export 'screens/ticket_detail_screen.dart';
 export 'screens/profile_screen.dart';
 export 'screens/crew_tracking_screen.dart';
+export 'screens/feedback_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

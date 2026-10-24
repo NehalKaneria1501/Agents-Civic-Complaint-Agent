@@ -7,6 +7,7 @@ import 'tickets_screen.dart';
 import 'profile_screen.dart';
 import 'ticket_detail_screen.dart';
 import 'crew_tracking_screen.dart';
+import 'feedback_screen.dart';
 import '../widgets/civic_app_logo.dart';
 
 // ==========================================
@@ -24,6 +25,7 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   int _currentIndex = 0;
+  bool _isViewingProfile = false;
   CivicTicket? _activeTicketForDetails;
   CivicTicket? _activeTicketForLiveTracking;
 
@@ -37,6 +39,42 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   PreferredSizeWidget _buildStitchTopAppBar() {
+    if (_isViewingProfile) {
+      return AppBar(
+        backgroundColor: CivicColors.surfaceContainerLowest.withValues(alpha: 0.95),
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: CivicColors.onSurface),
+          onPressed: () {
+            setState(() {
+              _isViewingProfile = false;
+            });
+          },
+        ),
+        title: const Text(
+          'Citizen Profile',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: CivicColors.onSurface,
+            letterSpacing: -0.3,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close_rounded, color: CivicColors.onSurfaceVariant),
+            onPressed: () {
+              setState(() {
+                _isViewingProfile = false;
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      );
+    }
+
     return AppBar(
       backgroundColor: CivicColors.surfaceContainerLowest.withValues(alpha: 0.95),
       elevation: 0,
@@ -47,7 +85,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
             size: 32,
             showShadow: false,
           ),
-
           const SizedBox(width: 10),
           const Text(
             'CivicAgent',
@@ -67,10 +104,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
               );
             },
           ),
-          const CircleAvatar(
-            radius: 16,
-            backgroundColor: CivicColors.primary,
-            child: Icon(Icons.person, color: Colors.white, size: 18),
+          Tooltip(
+            message: 'Citizen Profile & Settings',
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  _isViewingProfile = true;
+                  _activeTicketForDetails = null;
+                  _activeTicketForLiveTracking = null;
+                });
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: CivicColors.primary, width: 2),
+                ),
+                child: const CircleAvatar(
+                  radius: 14,
+                  backgroundColor: CivicColors.primary,
+                  child: Icon(Icons.person, color: Colors.white, size: 17),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -78,6 +135,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _buildCurrentScreen() {
+    if (_isViewingProfile) {
+      return ProfileScreen(
+        onSignOut: widget.onSignOut,
+        onManagePermissions: widget.onManagePermissions,
+      );
+    }
+
     if (_activeTicketForLiveTracking != null) {
       return CrewLiveTrackingScreen(
         ticket: _activeTicketForLiveTracking!,
@@ -108,12 +172,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
         return HomeScreen(
           onOpenAgentWithIncident: (incident) {
             setState(() {
+              _isViewingProfile = false;
               _currentIndex = 1;
             });
           },
           onOpenTicket: (ticket) {
             setState(() {
+              _isViewingProfile = false;
               _activeTicketForDetails = ticket;
+            });
+          },
+          onOpenFeedback: () {
+            setState(() {
+              _isViewingProfile = false;
+              _currentIndex = 3; // Switch to Feedback / Complaint form
             });
           },
         );
@@ -134,9 +206,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
           },
         );
       case 3:
-        return ProfileScreen(
-          onSignOut: widget.onSignOut,
-          onManagePermissions: widget.onManagePermissions,
+        return FeedbackComplaintScreen(
+          onComplaintSubmitted: () {
+            setState(() {
+              _currentIndex = 2; // Jump to Tickets ledger to track new grievance
+            });
+          },
         );
       default:
         return const HomeScreen();
@@ -165,7 +240,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
               _buildNavItem(0, Icons.home_rounded, 'Home'),
               _buildNavItem(1, Icons.smart_toy_rounded, 'Agent'),
               _buildNavItem(2, Icons.receipt_long_rounded, 'Tickets'),
-              _buildNavItem(3, Icons.person_rounded, 'Profile'),
+              _buildNavItem(3, Icons.rate_review_rounded, 'Feedback'),
             ],
           ),
         ),
@@ -174,11 +249,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _currentIndex == index && _activeTicketForDetails == null;
+    final isSelected = !_isViewingProfile &&
+        _currentIndex == index &&
+        _activeTicketForDetails == null &&
+        _activeTicketForLiveTracking == null;
+
     return InkWell(
       onTap: () {
         setState(() {
+          _isViewingProfile = false;
           _activeTicketForDetails = null;
+          _activeTicketForLiveTracking = null;
           _currentIndex = index;
         });
       },
@@ -213,3 +294,4 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 }
+
