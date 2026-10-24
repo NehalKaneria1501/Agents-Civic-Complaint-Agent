@@ -66,5 +66,32 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<!-- Camera Permission -->
+	<key>NSCameraUsageDescription</key>
+	<string>CivicAgent requires camera access to capture photos of potholes, streetlights, and civic hazards with live HUD analysis.</string>
+
+	<!-- Photo Library & Gallery Permissions -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CivicAgent requires photo library access to attach existing incident evidence photos from your gallery.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>CivicAgent requires permission to save geotagged inspection evidence photos to your photo library.</string>
+
+	<!-- Location / GPS Geotagging Permissions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>CivicAgent requires location access to pinpoint the exact coordinates, AMC municipal ward, and zone for quick squad dispatch.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>CivicAgent uses your location to verify inspection reports and dispatch repair squads accurately.</string>
+
+	<!-- Microphone (for Video Evidence) -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>CivicAgent requires microphone access if recording video evidence of civic complaints.</string>
+
+	<!-- App Transport Security for Remote Incident Photos -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
