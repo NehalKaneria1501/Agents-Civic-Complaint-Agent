@@ -630,12 +630,19 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
                     IconButton(
                       icon: const Icon(Icons.camera_alt_rounded, color: CivicColors.primary, size: 21),
                       tooltip: 'Take Photo with Camera',
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
+                      visualDensity: VisualDensity.compact,
                       onPressed: _openCameraFromChat,
                     ),
+                    const SizedBox(width: 4),
                     // Attachment / Gallery / Document Picker Button
                     IconButton(
                       icon: const Icon(Icons.attach_file_rounded, color: CivicColors.onSurfaceVariant, size: 20),
                       tooltip: 'Upload from Gallery or Documents',
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
+                      visualDensity: VisualDensity.compact,
                       onPressed: _showChatAttachmentOptions,
                     ),
                   ],

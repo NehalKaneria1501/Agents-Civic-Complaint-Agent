@@ -42,11 +42,14 @@ class _TicketDetailsViewState extends State<TicketDetailsView> {
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: widget.onBack,
               ),
-              const Text(
-                'Ticket Details',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+              const Expanded(
+                child: Text(
+                  'Ticket Details',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                ),
               ),
-              const Spacer(),
               if (!ticket.isEscalated)
                 TextButton.icon(
                   onPressed: () {
@@ -139,40 +142,46 @@ class _TicketDetailsViewState extends State<TicketDetailsView> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: CivicColors.primaryContainer.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(12),
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: CivicColors.primaryContainer.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.sync_rounded, size: 14, color: CivicColors.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            ticket.status,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: CivicColors.onPrimaryContainer),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.sync_rounded, size: 14, color: CivicColors.primary),
-                        const SizedBox(width: 4),
-                        Text(
-                          ticket.status,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: CivicColors.onPrimaryContainer),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: CivicColors.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${ticket.severity} Severity',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: CivicColors.error),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: CivicColors.errorContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${ticket.severity} Severity',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: CivicColors.error),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '#${ticket.ticketId}',
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: CivicColors.onSurfaceVariant),

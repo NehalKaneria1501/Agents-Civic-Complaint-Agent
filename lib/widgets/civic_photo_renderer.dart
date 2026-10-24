@@ -68,175 +68,191 @@ class _CivicPhotoRendererState extends State<CivicPhotoRenderer> {
       child: SizedBox(
         height: height,
         width: width,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // 1. High-Fidelity Procedural Incident Scene (Guaranteed Offline / Fallback)
-            _buildProceduralScene(scene),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final availableWidth = constraints.maxWidth;
+            final availableHeight = constraints.maxHeight;
+            final isCompact = availableHeight < 90 || availableWidth < 120;
+            final isMid = availableWidth < 220;
 
-            // 2. Real Photo Renderer (Camera local captures, gallery files, assets, base64, or network URLs)
-            _buildImageContent(context, scene),
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                // 1. High-Fidelity Procedural Incident Scene (Guaranteed Offline / Fallback)
+                _buildProceduralScene(scene),
 
-            // 3. Cinematic Lighting & Contrast Vignette
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.45),
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.75),
-                  ],
-                  stops: const [0.0, 0.45, 1.0],
-                ),
-              ),
-            ),
+                // 2. Real Photo Renderer (Camera local captures, gallery files, assets, base64, or network URLs)
+                _buildImageContent(context, scene),
 
-            // 4. Viewfinder Camera Reticle (if isViewfinder)
-            if (isViewfinder && height >= 100)
-              CustomPaint(
-                painter: _ViewfinderReticlePainter(accentColor: scene.accentColor),
-              ),
-
-            // 5. Header Badge (e.g. 'Live Geotag Camera', 'Initial Report', etc.)
-            if (showBadge && height >= 100 && (badge != null || isViewfinder))
-              Positioned(
-                top: 10,
-                left: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (badgeColor ?? Colors.black).withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      width: 0.8,
+                // 3. Cinematic Lighting & Contrast Vignette
+                if (!isCompact)
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.45),
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.75),
+                        ],
+                        stops: const [0.0, 0.45, 1.0],
+                      ),
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: isViewfinder ? const Color(0xFF10B981) : scene.accentColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        badge ?? (isViewfinder ? 'AMC Field Survey • Live Lens' : 'Incident Evidence'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
 
-            // 6. Camera Viewfinder Settings Indicator (top right)
-            if (isViewfinder && height >= 100)
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(6),
+                // 4. Viewfinder Camera Reticle (if isViewfinder)
+                if (isViewfinder && !isCompact)
+                  CustomPaint(
+                    painter: _ViewfinderReticlePainter(accentColor: scene.accentColor),
                   ),
-                  child: const Text(
-                    'AI 4K • HDR',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
 
-            // 7. Footer Geotag & Metadata Details
-            if (showBadge && height >= 100)
-              Positioned(
-
-              bottom: 10,
-              left: 10,
-              right: 10,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+                // 5. Header Badge (e.g. 'Live Geotag Camera', 'Initial Report', etc.)
+                if (showBadge && !isCompact && (badge != null || isViewfinder))
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    right: 8,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        if (title != null && title!.isNotEmpty)
-                          Text(
-                            title!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
-                            ),
-                          ),
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.location_on, color: scene.accentColor, size: 12),
-                            const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                gpsCoords ?? 'Ahmedabad Municipal Zone (AMC)',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                  fontFamily: 'monospace',
-                                  shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
-                                ),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: (badgeColor ?? Colors.black).withValues(alpha: 0.65),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                width: 0.8,
                               ),
                             ),
-                          ],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: isViewfinder ? const Color(0xFF10B981) : scene.accentColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    badge ?? (isViewfinder ? 'Live Lens' : 'Evidence'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
+                        if (isViewfinder && !isMid)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'AI 4K • HDR',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'GEOTAGGED',
-                      style: TextStyle(
-                        color: Color(0xFF10B981),
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.6,
-                      ),
+
+                // 6. Footer Geotag & Metadata Details
+                if (showBadge && !isCompact)
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    right: 8,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (title != null && title!.isNotEmpty)
+                                Text(
+                                  title!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                    shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                                  ),
+                                ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, color: scene.accentColor, size: 11),
+                                  const SizedBox(width: 2),
+                                  Expanded(
+                                    child: Text(
+                                      gpsCoords ?? 'Ahmedabad Municipal Zone (AMC)',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 9.5,
+                                        fontFamily: 'monospace',
+                                        shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!isMid) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'GEOTAGGED',
+                              style: TextStyle(
+                                color: Color(0xFF10B981),
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
 
-            ?overlay,
-          ],
+                ?overlay,
+              ],
+            );
+          },
         ),
       ),
     );
