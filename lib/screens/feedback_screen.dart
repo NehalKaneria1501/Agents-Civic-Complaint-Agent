@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import '../blocs/tickets/tickets_bloc.dart';
+import '../blocs/tickets/tickets_event.dart';
 import '../models/civic_models.dart';
-import '../services/amc_database.dart';
-import '../services/firestore_service.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_photo_renderer.dart';
 
@@ -119,11 +120,10 @@ class _FeedbackComplaintScreenState extends State<FeedbackComplaintScreen> {
       ),
     );
 
-    // Save locally
-    AmcDatabase.instance.addTicket(newTicket);
-
-    // Sync to Firestore
-    await FirestoreService.instance.saveTicket(newTicket);
+    // Dispatch AddTicketEvent through MVVM TicketsBloc
+    if (mounted) {
+      context.read<TicketsBloc>().add(AddTicketEvent(newTicket));
+    }
 
     setState(() => _isSubmitting = false);
 

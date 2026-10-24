@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
 import 'theme/civic_colors.dart';
 import 'services/firestore_service.dart';
+import 'repositories/civic_repository.dart';
+import 'blocs/tickets/tickets_bloc.dart';
+import 'blocs/tickets/tickets_event.dart';
+import 'blocs/chat/chat_bloc.dart';
+import 'blocs/profile/profile_cubit.dart';
 import 'screens/splash_screen.dart';
 import 'screens/permissions_screen.dart';
 import 'screens/auth_screens.dart';
@@ -14,6 +20,15 @@ export 'theme/civic_colors.dart';
 export 'models/civic_models.dart';
 export 'services/amc_database.dart';
 export 'services/firestore_service.dart';
+export 'repositories/civic_repository.dart';
+export 'blocs/tickets/tickets_bloc.dart';
+export 'blocs/tickets/tickets_event.dart';
+export 'blocs/tickets/tickets_state.dart';
+export 'blocs/chat/chat_bloc.dart';
+export 'blocs/chat/chat_event.dart';
+export 'blocs/chat/chat_state.dart';
+export 'blocs/profile/profile_cubit.dart';
+export 'blocs/profile/profile_state.dart';
 export 'widgets/civic_photo_renderer.dart';
 export 'widgets/civic_app_logo.dart';
 export 'screens/splash_screen.dart';
@@ -97,21 +112,41 @@ class _CivicAgentAppState extends State<CivicAgentApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AMC Civic Complaint Agent',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: CivicColors.surface,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: CivicColors.primary,
-          primary: CivicColors.primary,
-          secondary: CivicColors.secondary,
-          surface: CivicColors.surface,
+    return RepositoryProvider<CivicRepository>(
+      create: (context) => AmcCivicRepository(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<TicketsBloc>(
+            create: (context) => TicketsBloc(
+              repository: context.read<CivicRepository>(),
+            )..add(const LoadTicketsEvent()),
+          ),
+          BlocProvider<ChatBloc>(
+            create: (context) => ChatBloc(
+              repository: context.read<CivicRepository>(),
+            ),
+          ),
+          BlocProvider<ProfileCubit>(
+            create: (context) => ProfileCubit(),
+          ),
+        ],
+        child: MaterialApp(
+          title: 'AMC Civic Complaint Agent',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            useMaterial3: true,
+            scaffoldBackgroundColor: CivicColors.surface,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: CivicColors.primary,
+              primary: CivicColors.primary,
+              secondary: CivicColors.secondary,
+              surface: CivicColors.surface,
+            ),
+            fontFamily: 'Inter',
+          ),
+          home: _buildCurrentNavScreen(),
         ),
-        fontFamily: 'Inter',
       ),
-      home: _buildCurrentNavScreen(),
     );
   }
 

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import '../blocs/chat/chat_bloc.dart';
+import '../blocs/chat/chat_event.dart';
+import '../blocs/chat/chat_state.dart';
 import '../models/civic_models.dart';
 import '../services/amc_database.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_photo_renderer.dart';
 
 // ==========================================
-// SCREEN: AGENT CHAT SCREEN
-// Full AI Chatbot with Camera & Gallery uploads
+// SCREEN: AGENT CHAT SCREEN (MVVM ARCHITECTURE)
+// Full AI Chatbot driven by ChatBloc, Events & States
 // ==========================================
 
 class AgentChatScreen extends StatefulWidget {
@@ -22,92 +26,12 @@ class AgentChatScreen extends StatefulWidget {
 class _AgentChatScreenState extends State<AgentChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [];
-  bool _isProcessing = false;
-  String _agentStepLabel = '';
 
   @override
-  void initState() {
-    super.initState();
-    _seedInitialChatFlow();
-  }
-
-  void _seedInitialChatFlow() {
-    // 1. Initial User photo upload message
-    _messages.add(
-      ChatMessage(
-        id: 'user-01',
-        isUser: true,
-        text: 'Can you report this massive pothole I just hit on Main Street near 4th Ave?',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-        attachedPhoto: sampleIncidents[0],
-      ),
-    );
-
-    // 2. Initial AI Agent Tool Execution Response
-    final ticket = AmcDatabase.instance.tickets.first;
-    _messages.add(
-      ChatMessage(
-        id: 'bot-01',
-        isUser: false,
-        text: "I've received your photo. Running automated municipal diagnostics...",
-        timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
-        ticketSummary: ticket,
-        toolCalls: [
-          ToolCallLog(
-            type: ToolCallType.analyzeImage,
-            toolName: 'analyze_civic_image()',
-            arguments: {'image': 'pothole_main_st.jpg', 'mode': 'damage_severity'},
-            result: {'detected_issue': 'Pothole (severity high)', 'confidence': 0.98},
-            latency: const Duration(milliseconds: 480),
-          ),
-          ToolCallLog(
-            type: ToolCallType.lookupWardDepartment,
-            toolName: 'lookup_ward_and_department()',
-            arguments: {'gps': '23.0365, 72.5126', 'issue': 'Pothole'},
-            result: {'ward': 'Ward 4 - Central Zone', 'dept': 'Roads & Infrastructure Dept'},
-            latency: const Duration(milliseconds: 390),
-          ),
-          ToolCallLog(
-            type: ToolCallType.createTicket,
-            toolName: 'create_amc_ticket()',
-            arguments: {'title': 'Deep Pothole Hazard', 'ward': 4, 'dept': 'ROAD_ENG'},
-            result: {'ticket_id': '#AMC-9482', 'status': 'Assigned', 'sla': '48h'},
-            latency: const Duration(milliseconds: 520),
-          ),
-        ],
-      ),
-    );
-
-    // 3. User status query
-    _messages.add(
-      ChatMessage(
-        id: 'user-02',
-        isUser: true,
-        text: 'What is the status?',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 3)),
-      ),
-    );
-
-    // 4. AI Agent status answer
-    _messages.add(
-      ChatMessage(
-        id: 'bot-02',
-        isUser: false,
-        text: 'Ticket **#AMC-9482** is currently **Assigned** to Ward 4 Roads Team. Estimated repair by Thursday.',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 2)),
-        ticketSummary: ticket,
-        toolCalls: [
-          ToolCallLog(
-            type: ToolCallType.fetchStatus,
-            toolName: 'fetch_ticket_status()',
-            arguments: {'ticket_id': 'AMC-9482'},
-            result: ticket.toJson(),
-            latency: const Duration(milliseconds: 320),
-          ),
-        ],
-      ),
-    );
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _scrollToBottom() {
@@ -122,180 +46,73 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
     });
   }
 
-  Future<void> _handleUserMessage(String text, {SampleIncident? samplePhoto}) async {
+  void _handleUserMessage(String text, {SampleIncident? samplePhoto}) {
     final query = text.trim();
     if (query.isEmpty && samplePhoto == null) return;
 
     _textController.clear();
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          isUser: true,
-          text: query.isNotEmpty ? query : 'Report civic issue from photo (${samplePhoto?.title})',
-          timestamp: DateTime.now(),
-          attachedPhoto: samplePhoto,
-        ),
-      );
-      _isProcessing = true;
-      _agentStepLabel = 'CivicBot reviewing municipal query...';
-    });
+    context.read<ChatBloc>().add(
+          SendChatMessageEvent(
+            text: query,
+            samplePhoto: samplePhoto,
+          ),
+        );
     _scrollToBottom();
-
-    final lower = query.toLowerCase();
-    final isStatus = lower.contains('status') || lower.contains('track') || lower.contains('update');
-
-    if (isStatus && samplePhoto == null) {
-      await _executeStatusQuery(query);
-    } else {
-      await _executeFilingPipeline(samplePhoto ?? sampleIncidents[0]);
-    }
-
-    setState(() {
-      _isProcessing = false;
-      _agentStepLabel = '';
-    });
-    _scrollToBottom();
-  }
-
-  Future<void> _executeFilingPipeline(SampleIncident photo) async {
-    final tools = <ToolCallLog>[];
-
-    setState(() => _agentStepLabel = 'Executing analyze_civic_image()...');
-    await Future.delayed(const Duration(milliseconds: 600));
-    tools.add(
-      ToolCallLog(
-        type: ToolCallType.analyzeImage,
-        toolName: 'analyze_civic_image()',
-        arguments: {'photo_key': photo.key, 'exif_gps': photo.gpsCoords},
-        result: {'issue': photo.issueCategory, 'severity': photo.severity, 'confidence': '98.5%'},
-        latency: const Duration(milliseconds: 510),
-      ),
-    );
-
-    setState(() => _agentStepLabel = 'Executing lookup_ward_and_department()...');
-    await Future.delayed(const Duration(milliseconds: 550));
-    final ward = AmcDatabase.instance.findWard(photo.defaultArea);
-    final dept = AmcDatabase.instance.findDepartment(photo.departmentKey);
-    tools.add(
-      ToolCallLog(
-        type: ToolCallType.lookupWardDepartment,
-        toolName: 'lookup_ward_and_department()',
-        arguments: {'location': photo.defaultArea, 'category': photo.issueCategory},
-        result: {'ward': '${ward.wardName} (${ward.zone})', 'dept': dept.name, 'sla': '${dept.slaHours}h'},
-        latency: const Duration(milliseconds: 440),
-      ),
-    );
-
-    setState(() => _agentStepLabel = 'Executing create_amc_ticket()...');
-    await Future.delayed(const Duration(milliseconds: 600));
-    final ticket = AmcDatabase.instance.createTicket(
-      issueCategory: photo.issueCategory,
-      description: photo.description,
-      severity: photo.severity,
-      area: photo.defaultArea,
-      departmentKey: photo.departmentKey,
-      photoUrl: photo.photoUrl,
-    );
-    tools.add(
-      ToolCallLog(
-        type: ToolCallType.createTicket,
-        toolName: 'create_amc_ticket()',
-        arguments: {'category': ticket.issueCategory, 'ward': ward.wardNumber},
-        result: ticket.toJson(),
-        latency: const Duration(milliseconds: 580),
-      ),
-    );
-
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          isUser: false,
-          text: "I've analyzed your photo. Complaint successfully logged under official municipal SLA.",
-          timestamp: DateTime.now(),
-          ticketSummary: ticket,
-          toolCalls: tools,
-        ),
-      );
-    });
-  }
-
-  Future<void> _executeStatusQuery(String query) async {
-    setState(() => _agentStepLabel = 'Executing fetch_ticket_status()...');
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    final ticket = AmcDatabase.instance.fetchStatus(query);
-    if (ticket == null) return;
-
-    final tool = ToolCallLog(
-      type: ToolCallType.fetchStatus,
-      toolName: 'fetch_ticket_status()',
-      arguments: {'query': query, 'ticket_id': ticket.ticketId},
-      result: ticket.toJson(),
-      latency: const Duration(milliseconds: 340),
-    );
-
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          isUser: false,
-          text: 'Ticket **#${ticket.ticketId}** is currently **${ticket.status}** with ${ticket.department.name}. Estimated repair within ${ticket.department.slaHours} hours.',
-          timestamp: DateTime.now(),
-          ticketSummary: ticket,
-          toolCalls: [tool],
-        ),
-      );
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    return Column(
-      children: [
-        // Header Agent Context Banner (collapses when keyboard is active to prevent squashing)
-        if (!isKeyboardOpen) _buildContextBanner(),
+    return BlocConsumer<ChatBloc, ChatState>(
+      listener: (context, state) {
+        _scrollToBottom();
+      },
+      builder: (context, state) {
+        return Column(
+          children: [
+            // Header Agent Context Banner (collapses when keyboard is active to prevent squashing)
+            if (!isKeyboardOpen) _buildContextBanner(),
 
-        // Chat Message List
-        Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: _messages.length,
-            itemBuilder: (ctx, i) => _buildMessageRow(_messages[i]),
-          ),
-        ),
-
-        // Agent Processing Status Bar
-        if (_isProcessing)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: CivicColors.primary,
-            child: Row(
-              children: [
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  _agentStepLabel,
-                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ],
+            // Chat Message List
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: state.messages.length,
+                itemBuilder: (ctx, i) => _buildMessageRow(state.messages[i]),
+              ),
             ),
-          ),
 
-        // Quick Suggestion Pills (shown when keyboard is dismissed)
-        if (!isKeyboardOpen) _buildSuggestionPills(),
+            // Agent Processing Status Bar
+            if (state.isProcessing)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: CivicColors.primary,
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      state.stepLabel,
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
 
-        // Chat Input Bar
-        _buildInputBar(),
-      ],
+            // Quick Suggestion Pills (shown when keyboard is dismissed)
+            if (!isKeyboardOpen) _buildSuggestionPills(),
+
+            // Chat Input Bar
+            _buildInputBar(),
+          ],
+        );
+      },
     );
   }
 

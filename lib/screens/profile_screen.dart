@@ -1,14 +1,17 @@
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import '../blocs/profile/profile_cubit.dart';
+import '../blocs/profile/profile_state.dart';
 import '../models/civic_models.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_app_logo.dart';
 
 // ==========================================
-// SCREEN: PROFILE SCREEN
-// Includes dynamic Edit Profile and Camera/Gallery Photo Picker
+// SCREEN: PROFILE SCREEN (MVVM ARCHITECTURE)
+// Backed by ProfileCubit and ProfileState
 // ==========================================
 
 class ProfileScreen extends StatefulWidget {
@@ -29,32 +32,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   VoidCallback? get onSignOut => widget.onSignOut;
   VoidCallback? get onManagePermissions => widget.onManagePermissions;
 
-  // Citizen Profile State
-  String _citizenName = 'Nehal Kaneria';
-  String _activeWard = 'Ward 4 (Navrangpura/Central District, AMC)';
-  String _phone = '+91 98765 43210';
-  String _email = 'nehal.kaneria@ahmedabadcity.gov.in';
-  String _registeredArea = 'Navrangpura CG Road & Vastrapur';
-  String? _profilePhotoPath;
-
-  Future<void> _pickProfilePhoto(ImageSource source) async {
+  Future<void> _pickProfilePhoto(BuildContext context, ImageSource source) async {
     try {
       final photo = await pickCivicPhoto(context: context, source: source);
-      if (photo != null) {
-        setState(() {
-          _profilePhotoPath = photo.photoUrl;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✓ Profile photo updated from ${source == ImageSource.camera ? "camera" : "gallery"}!'),
-              backgroundColor: CivicColors.primary,
-            ),
-          );
-        }
+      if (photo != null && context.mounted) {
+        context.read<ProfileCubit>().updatePhoto(photo.photoUrl);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ Profile photo updated from ${source == ImageSource.camera ? "camera" : "gallery"}!'),
+            backgroundColor: CivicColors.primary,
+          ),
+        );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Could not set profile photo: $e'), backgroundColor: CivicColors.error),
         );
@@ -62,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _showPhotoOptions() {
+  void _showPhotoOptions(BuildContext context, ProfileState state) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -92,7 +83,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   subtitle: const Text('Capture a live citizen profile picture', style: TextStyle(fontSize: 11.5)),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _pickProfilePhoto(ImageSource.camera);
+                    _pickProfilePhoto(context, ImageSource.camera);
                   },
                 ),
                 ListTile(
@@ -104,10 +95,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   subtitle: const Text('Select existing photo from phone gallery', style: TextStyle(fontSize: 11.5)),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _pickProfilePhoto(ImageSource.gallery);
+                    _pickProfilePhoto(context, ImageSource.gallery);
                   },
                 ),
-                if (_profilePhotoPath != null)
+                if (state.photoPath != null)
                   ListTile(
                     leading: const CircleAvatar(
                       backgroundColor: CivicColors.errorContainer,
@@ -117,7 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     subtitle: const Text('Revert to default municipal avatar', style: TextStyle(fontSize: 11.5)),
                     onTap: () {
                       Navigator.pop(ctx);
-                      setState(() => _profilePhotoPath = null);
+                      context.read<ProfileCubit>().removePhoto();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Profile photo reset.')),
                       );
@@ -131,12 +122,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showEditProfileDialog() {
-    final nameCtrl = TextEditingController(text: _citizenName);
-    final phoneCtrl = TextEditingController(text: _phone);
-    final areaCtrl = TextEditingController(text: _registeredArea);
-    final emailCtrl = TextEditingController(text: _email);
-    String selectedWard = _activeWard;
+  void _showEditProfileDialog(BuildContext context, ProfileState state) {
+    final nameCtrl = TextEditingController(text: state.name);
+    final phoneCtrl = TextEditingController(text: state.phone);
+    final areaCtrl = TextEditingController(text: state.address);
+    final emailCtrl = TextEditingController(text: state.email);
+    String selectedWard = state.ward;
 
     final wards = [
       'Ward 4 (Navrangpura/Central District, AMC)',
@@ -257,13 +248,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       height: 48,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          setState(() {
-                            if (nameCtrl.text.trim().isNotEmpty) _citizenName = nameCtrl.text.trim();
-                            if (phoneCtrl.text.trim().isNotEmpty) _phone = phoneCtrl.text.trim();
-                            if (areaCtrl.text.trim().isNotEmpty) _registeredArea = areaCtrl.text.trim();
-                            if (emailCtrl.text.trim().isNotEmpty) _email = emailCtrl.text.trim();
-                            _activeWard = selectedWard;
-                          });
+                          context.read<ProfileCubit>().updateProfile(
+                            name: nameCtrl.text.trim().isNotEmpty ? nameCtrl.text.trim() : null,
+                            phone: phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : null,
+                            ward: selectedWard,
+                            address: areaCtrl.text.trim().isNotEmpty ? areaCtrl.text.trim() : null,
+                            email: emailCtrl.text.trim().isNotEmpty ? emailCtrl.text.trim() : null,
+                          );
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -293,91 +284,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          // Profile Avatar with Clickable Camera / Gallery Badge
-          Center(
-            child: Stack(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: CivicColors.primary, width: 2.5),
-                  ),
-                  child: CircleAvatar(
-                    radius: 44,
-                    backgroundColor: CivicColors.primary,
-                    backgroundImage: _profilePhotoPath != null
-                        ? (!kIsWeb && File(_profilePhotoPath!).existsSync()
-                            ? FileImage(File(_profilePhotoPath!)) as ImageProvider
-                            : NetworkImage(_profilePhotoPath!))
-                        : null,
-                    child: _profilePhotoPath == null
-                        ? const Icon(Icons.person, color: Colors.white, size: 52)
-                        : null,
-                  ),
-                ),
-                Positioned(
-                  bottom: 2,
-                  right: 2,
-                  child: InkWell(
-                    onTap: _showPhotoOptions,
-                    borderRadius: BorderRadius.circular(18),
-                    child: Container(
-                      padding: const EdgeInsets.all(7),
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      builder: (context, state) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              // Profile Avatar with Clickable Camera / Gallery Badge
+              Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
-                        color: CivicColors.secondary,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        border: Border.all(color: CivicColors.primary, width: 2.5),
                       ),
-                      child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
+                      child: CircleAvatar(
+                        radius: 44,
+                        backgroundColor: CivicColors.primary,
+                        backgroundImage: state.photoPath != null
+                            ? (!kIsWeb && File(state.photoPath!).existsSync()
+                                ? FileImage(File(state.photoPath!)) as ImageProvider
+                                : NetworkImage(state.photoPath!))
+                            : null,
+                        child: state.photoPath == null
+                            ? const Icon(Icons.person, color: Colors.white, size: 52)
+                            : null,
+                      ),
                     ),
-                  ),
+                    Positioned(
+                      bottom: 2,
+                      right: 2,
+                      child: InkWell(
+                        onTap: () => _showPhotoOptions(context, state),
+                        borderRadius: BorderRadius.circular(18),
+                        child: Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: CivicColors.secondary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _citizenName,
-            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            _activeWard,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12.5, color: CivicColors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 14),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                state.name,
+                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                state.ward,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12.5, color: CivicColors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 14),
 
-          // Edit Profile Action Button
-          OutlinedButton.icon(
-            onPressed: _showEditProfileDialog,
-            icon: const Icon(Icons.edit_rounded, size: 16),
-            label: const Text('Edit Profile & Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: CivicColors.primary,
-              side: const BorderSide(color: CivicColors.primary),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-          const SizedBox(height: 18),
+              // Edit Profile Action Button
+              OutlinedButton.icon(
+                onPressed: () => _showEditProfileDialog(context, state),
+                icon: const Icon(Icons.edit_rounded, size: 16),
+                label: const Text('Edit Profile & Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: CivicColors.primary,
+                  side: const BorderSide(color: CivicColors.primary),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 18),
 
-          _buildProfileTile(Icons.phone_android_rounded, 'SMS / WhatsApp Status Dispatch', _phone),
-          _buildProfileTile(Icons.location_on_outlined, 'Registered Area', _registeredArea),
-          _buildProfileTile(Icons.verified_user_outlined, 'Citizen Trust Score', 'Level 4 (Verified Citizen)'),
-          _buildProfileTile(Icons.help_outline_rounded, 'AMC Municipal Grievance Helpline', '155304 / 1800 233 2330'),
+              _buildProfileTile(Icons.phone_android_rounded, 'SMS / WhatsApp Status Dispatch', state.phone),
+              _buildProfileTile(Icons.location_on_outlined, 'Registered Area', state.address),
+              _buildProfileTile(Icons.verified_user_outlined, 'Citizen Trust Score', 'Level ${state.trustScore} (Verified Citizen)'),
+              _buildProfileTile(Icons.help_outline_rounded, 'AMC Municipal Grievance Helpline', '155304 / 1800 233 2330'),
 
           if (onManagePermissions != null)
             InkWell(
@@ -490,7 +483,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
         ],
-      ),
+          ),
+        );
+      },
     );
   }
 

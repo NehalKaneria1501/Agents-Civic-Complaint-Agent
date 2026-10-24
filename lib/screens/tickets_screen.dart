@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/civic_models.dart';
 import '../services/amc_database.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_photo_renderer.dart';
+import '../blocs/tickets/tickets_bloc.dart';
+import '../blocs/tickets/tickets_event.dart';
+import '../blocs/tickets/tickets_state.dart';
 
 // ==========================================
-// SCREEN: TICKETS LEDGER SCREEN
-// Shows all tickets with live photo evidence previews
+// SCREEN: TICKETS LEDGER SCREEN (MVVM VIEW)
+// Shows all tickets with reactive Bloc state and status filter chips
 // ==========================================
 
 class TicketsLedgerScreen extends StatefulWidget {
@@ -21,37 +25,78 @@ class TicketsLedgerScreen extends StatefulWidget {
 class _TicketsLedgerScreenState extends State<TicketsLedgerScreen> {
   @override
   Widget build(BuildContext context) {
-    final tickets = AmcDatabase.instance.tickets;
+    return BlocBuilder<TicketsBloc, TicketsState>(
+      builder: (context, state) {
+        List<CivicTicket> displayedTickets = AmcDatabase.instance.tickets;
+        String activeFilter = 'All';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        if (state is TicketsLoadedState) {
+          displayedTickets = state.filteredTickets;
+          activeFilter = state.activeFilter;
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'My Tickets & Status',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'My Tickets & Status',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: CivicColors.primaryContainer.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${displayedTickets.length} Registered',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: CivicColors.onPrimaryContainer),
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: CivicColors.primaryContainer.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${tickets.length} Registered',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: CivicColors.onPrimaryContainer),
+              const SizedBox(height: 12),
+
+              // Reactive Status Filter Chips (MVVM ViewModel Binding)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: ['All', 'Registered', 'Assigned', 'In Progress', 'Resolved'].map((filter) {
+                    final isSelected = activeFilter.toLowerCase() == filter.toLowerCase();
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(filter, style: TextStyle(fontSize: 11.5, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                        selected: isSelected,
+                        selectedColor: CivicColors.primaryContainer.withValues(alpha: 0.3),
+                        checkmarkColor: CivicColors.primary,
+                        onSelected: (_) {
+                          context.read<TicketsBloc>().add(FilterTicketsEvent(filter));
+                        },
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
+              const SizedBox(height: 14),
+
+              if (displayedTickets.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(28),
+                  alignment: Alignment.center,
+                  child: const Text('No tickets found for this category filter.', style: TextStyle(color: CivicColors.onSurfaceVariant)),
+                )
+              else
+                ...displayedTickets.map((t) => _buildTicketCard(context, t)),
             ],
           ),
-          const SizedBox(height: 14),
-          ...tickets.map((t) => _buildTicketCard(context, t)),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -216,9 +261,7 @@ class _TicketsLedgerScreenState extends State<TicketsLedgerScreen> {
               children: [
                 OutlinedButton.icon(
                   onPressed: () {
-                    setState(() {
-                      AmcDatabase.instance.advanceTicketStatus(t);
-                    });
+                    context.read<TicketsBloc>().add(AdvanceTicketStatusEvent(t));
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Ticket #${t.ticketId} updated to ${t.status}! Ask agent in chat for live status.')),
                     );

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/tickets/tickets_bloc.dart';
+import '../blocs/tickets/tickets_event.dart';
 import '../models/civic_models.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_photo_renderer.dart';
@@ -53,6 +56,7 @@ class _TicketDetailsViewState extends State<TicketDetailsView> {
               if (!ticket.isEscalated)
                 TextButton.icon(
                   onPressed: () {
+                    context.read<TicketsBloc>().add(EscalateTicketEvent(ticket));
                     setState(() {
                       ticket.isEscalated = true;
                     });
