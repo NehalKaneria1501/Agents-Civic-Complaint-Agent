@@ -7,7 +7,7 @@ import '../theme/civic_colors.dart';
 // Google Stitch AI Screen: 70e916ecc2784261a0482eb36df4cc03
 // ==========================================
 
-class CrewLiveTrackingScreen extends StatelessWidget {
+class CrewLiveTrackingScreen extends StatefulWidget {
   final CivicTicket ticket;
   final VoidCallback onBack;
 
@@ -16,6 +16,14 @@ class CrewLiveTrackingScreen extends StatelessWidget {
     required this.ticket,
     required this.onBack,
   });
+
+  @override
+  State<CrewLiveTrackingScreen> createState() => _CrewLiveTrackingScreenState();
+}
+
+class _CrewLiveTrackingScreenState extends State<CrewLiveTrackingScreen> {
+  CivicTicket get ticket => widget.ticket;
+  VoidCallback get onBack => widget.onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -266,18 +274,23 @@ class CrewLiveTrackingScreen extends StatelessWidget {
   }
 }
 
-class _SquadMetric extends StatelessWidget {
+class _SquadMetric extends StatefulWidget {
   final String label;
   final String value;
   const _SquadMetric({required this.label, required this.value});
 
   @override
+  State<_SquadMetric> createState() => _SquadMetricState();
+}
+
+class _SquadMetricState extends State<_SquadMetric> {
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: CivicColors.onSurface)),
+        Text(widget.value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: CivicColors.onSurface)),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 10.5, color: CivicColors.onSurfaceVariant)),
+        Text(widget.label, style: const TextStyle(fontSize: 10.5, color: CivicColors.onSurfaceVariant)),
       ],
     );
   }

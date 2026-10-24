@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 // Supports offline procedural fallbacks, camera captures, gallery files
 // ==========================================
 
-class CivicPhotoRenderer extends StatelessWidget {
+class CivicPhotoRenderer extends StatefulWidget {
   final String? photoUrl;
   final String? category;
   final String? title;
@@ -37,6 +37,24 @@ class CivicPhotoRenderer extends StatelessWidget {
     this.isViewfinder = false,
     this.customOverlay,
   });
+
+  @override
+  State<CivicPhotoRenderer> createState() => _CivicPhotoRendererState();
+}
+
+class _CivicPhotoRendererState extends State<CivicPhotoRenderer> {
+  String? get photoUrl => widget.photoUrl;
+  String? get category => widget.category;
+  String? get title => widget.title;
+  String? get gpsCoords => widget.gpsCoords;
+  double get height => widget.height;
+  double get width => widget.width;
+  BorderRadius? get borderRadius => widget.borderRadius;
+  String? get badge => widget.badge;
+  Color? get badgeColor => widget.badgeColor;
+  bool get showBadge => widget.showBadge;
+  bool get isViewfinder => widget.isViewfinder;
+  Widget? get customOverlay => widget.customOverlay;
 
 
   @override

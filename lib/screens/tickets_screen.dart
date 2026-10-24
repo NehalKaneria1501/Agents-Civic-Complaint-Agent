@@ -9,11 +9,16 @@ import '../widgets/civic_photo_renderer.dart';
 // Shows all tickets with live photo evidence previews
 // ==========================================
 
-class TicketsLedgerScreen extends StatelessWidget {
+class TicketsLedgerScreen extends StatefulWidget {
   final Function(CivicTicket)? onOpenTicket;
 
   const TicketsLedgerScreen({super.key, this.onOpenTicket});
 
+  @override
+  State<TicketsLedgerScreen> createState() => _TicketsLedgerScreenState();
+}
+
+class _TicketsLedgerScreenState extends State<TicketsLedgerScreen> {
   @override
   Widget build(BuildContext context) {
     final tickets = AmcDatabase.instance.tickets;
@@ -69,7 +74,7 @@ class TicketsLedgerScreen extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          if (onOpenTicket != null) onOpenTicket!(t);
+          if (widget.onOpenTicket != null) widget.onOpenTicket!(t);
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,7 +212,9 @@ class TicketsLedgerScreen extends StatelessWidget {
               children: [
                 OutlinedButton.icon(
                   onPressed: () {
-                    AmcDatabase.instance.advanceTicketStatus(t);
+                    setState(() {
+                      AmcDatabase.instance.advanceTicketStatus(t);
+                    });
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Ticket #${t.ticketId} updated to ${t.status}! Ask agent in chat for live status.')),
                     );

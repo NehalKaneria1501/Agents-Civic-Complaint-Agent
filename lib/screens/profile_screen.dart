@@ -6,7 +6,7 @@ import '../widgets/civic_app_logo.dart';
 // SCREEN: PROFILE SCREEN
 // ==========================================
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   final VoidCallback? onSignOut;
   final VoidCallback? onManagePermissions;
 
@@ -15,6 +15,14 @@ class ProfileScreen extends StatelessWidget {
     this.onSignOut,
     this.onManagePermissions,
   });
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  VoidCallback? get onSignOut => widget.onSignOut;
+  VoidCallback? get onManagePermissions => widget.onManagePermissions;
 
   @override
   Widget build(BuildContext context) {

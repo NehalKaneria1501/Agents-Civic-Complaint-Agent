@@ -7,7 +7,7 @@ import '../theme/civic_colors.dart';
 // Akshardham Mandir heritage architecture in a modern civic emblem
 // ==========================================
 
-class CivicAppLogo extends StatelessWidget {
+class CivicAppLogo extends StatefulWidget {
   final double size;
   final BorderRadius? borderRadius;
   final bool showShadow;
@@ -18,6 +18,15 @@ class CivicAppLogo extends StatelessWidget {
     this.borderRadius,
     this.showShadow = true,
   });
+
+  @override
+  State<CivicAppLogo> createState() => _CivicAppLogoState();
+}
+
+class _CivicAppLogoState extends State<CivicAppLogo> {
+  double get size => widget.size;
+  BorderRadius? get borderRadius => widget.borderRadius;
+  bool get showShadow => widget.showShadow;
 
   @override
   Widget build(BuildContext context) {

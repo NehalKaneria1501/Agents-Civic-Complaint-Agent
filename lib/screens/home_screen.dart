@@ -9,7 +9,7 @@ import '../widgets/civic_photo_renderer.dart';
 // SCREEN: HOME SCREEN (AMC CIVIC DASHBOARD)
 // ==========================================
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final Function(SampleIncident)? onOpenAgentWithIncident;
   final Function(CivicTicket)? onOpenTicket;
 
@@ -19,6 +19,11 @@ class HomeScreen extends StatelessWidget {
     this.onOpenTicket,
   });
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -351,7 +356,7 @@ class HomeScreen extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          if (onOpenTicket != null) onOpenTicket!(t);
+          if (widget.onOpenTicket != null) widget.onOpenTicket!(t);
         },
         child: Row(
           children: [
@@ -625,8 +630,8 @@ class HomeScreen extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        if (onOpenAgentWithIncident != null) {
-                          onOpenAgentWithIncident!(incident);
+                        if (widget.onOpenAgentWithIncident != null) {
+                          widget.onOpenAgentWithIncident!(incident);
                         }
                       },
                       style: ElevatedButton.styleFrom(
