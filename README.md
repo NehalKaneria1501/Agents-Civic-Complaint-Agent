@@ -3,6 +3,7 @@
 AI-powered Civic Issue Reporting & Complaint Management Agent built with Flutter.
 
 Mock the municipal (AMC - Ahmedabad Municipal Corporation) system as a local reactive database with complete end-to-end AI agent tool calls:
+
 - **Image Analysis (`analyze_civic_image`)**: Identifies road hazards, pothole severity, streetlight fixtures, and solid waste dumps with confidence scores.
 - **Ward & Department Lookup (`lookup_ward_and_department`)**: Geospatial and area-based routing to the designated municipal ward and department with official SLA benchmarks.
 - **Ticket Creation (`create_amc_ticket`)**: Automated civic ticket creation, tracking IDs, squad dispatch, and timeline generation.
@@ -22,11 +23,13 @@ Mock the municipal (AMC - Ahmedabad Municipal Corporation) system as a local rea
 ## 🛠️ Getting Started
 
 ### Prerequisites
+
 - Flutter SDK 3.13+ or higher
 - Android Studio / VS Code with Flutter extension
 - Android SDK 34 (API 34)
 
 ### Running the Project
+
 ```bash
 # Get dependencies
 flutter pub get
