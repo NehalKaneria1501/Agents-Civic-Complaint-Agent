@@ -17,6 +17,7 @@ import 'screens/main_shell_screen.dart';
 
 import 'services/firebase_ai_logic_service.dart';
 import 'services/offline_database_service.dart';
+import 'services/sqlite_database_service.dart';
 
 // Exports for backward-compatibility with tests & external references
 export 'theme/civic_colors.dart';
@@ -25,6 +26,8 @@ export 'services/amc_database.dart';
 export 'services/firestore_service.dart';
 export 'services/firebase_ai_logic_service.dart';
 export 'services/google_maps_service.dart';
+export 'services/offline_database_service.dart';
+export 'services/sqlite_database_service.dart';
 export 'repositories/civic_repository.dart';
 export 'blocs/tickets/tickets_bloc.dart';
 export 'blocs/tickets/tickets_event.dart';
@@ -48,17 +51,17 @@ export 'screens/profile_screen.dart';
 export 'screens/crew_tracking_screen.dart';
 export 'screens/feedback_screen.dart';
 export 'screens/civic_map_screen.dart';
-export 'services/offline_database_service.dart';
 export 'screens/amc_directory_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Offline Database (local persistence ledger)
+  // Initialize Offline & SQLite Relational Databases (local persistence ledger)
   try {
     await OfflineDatabaseService.instance.init();
+    await SqliteDatabaseService.instance.init();
   } catch (e) {
-    debugPrint('Offline database notice: $e');
+    debugPrint('Offline/SQLite database notice: $e');
   }
 
   // Initialize Firebase (civic-complaint-agent-dee84) & AI Logic

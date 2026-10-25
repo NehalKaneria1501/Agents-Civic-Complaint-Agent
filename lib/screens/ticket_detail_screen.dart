@@ -279,13 +279,23 @@ class _TicketDetailsViewState extends State<TicketDetailsView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 20),
-                  const SizedBox(width: 8),
-                  const Text('Photographic Evidence', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: CivicColors.onSurface)),
-                ],
+              const Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Photographic Evidence',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               const Text('2 Photos Attached', style: TextStyle(fontSize: 11, color: CivicColors.onSurfaceVariant)),
             ],
           ),
@@ -298,7 +308,7 @@ class _TicketDetailsViewState extends State<TicketDetailsView> {
                   category: ticket.issueCategory,
                   title: ticket.title,
                   gpsCoords: ticket.ward.wardOffice,
-                  height: 140,
+                  height: 148,
                   badge: 'Initial Report',
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -310,7 +320,7 @@ class _TicketDetailsViewState extends State<TicketDetailsView> {
                   category: ticket.issueCategory,
                   title: 'Post-Inspection Verification',
                   gpsCoords: ticket.ward.wardOffice,
-                  height: 140,
+                  height: 148,
                   badge: 'Field Squad Follow-up',
                   borderRadius: BorderRadius.circular(12),
                   customOverlay: Positioned(
@@ -320,8 +330,14 @@ class _TicketDetailsViewState extends State<TicketDetailsView> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(6),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
                       child: const Row(
                         children: [
@@ -411,8 +427,23 @@ class _TicketDetailsViewState extends State<TicketDetailsView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isActive ? CivicColors.primary : CivicColors.onSurface)),
-                    Text(time, style: const TextStyle(fontSize: 11, color: CivicColors.onSurfaceVariant)),
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: isActive ? CivicColors.primary : CivicColors.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      time,
+                      style: const TextStyle(fontSize: 11, color: CivicColors.onSurfaceVariant),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 2),

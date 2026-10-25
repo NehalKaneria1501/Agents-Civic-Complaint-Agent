@@ -10,6 +10,7 @@ import 'package:agentsciviccomplaintagent/blocs/chat/chat_state.dart';
 import 'package:agentsciviccomplaintagent/services/google_maps_service.dart';
 import 'package:agentsciviccomplaintagent/services/firebase_ai_logic_service.dart';
 import 'package:agentsciviccomplaintagent/services/offline_database_service.dart';
+import 'package:agentsciviccomplaintagent/services/sqlite_database_service.dart';
 import 'package:agentsciviccomplaintagent/models/civic_models.dart';
 
 void main() {
@@ -226,6 +227,105 @@ void main() {
       await db.markDraftSynced('AMC-DRAFT-99');
       final pendingAfter = db.getPendingDrafts();
       expect(pendingAfter.any((d) => d['ticketId'] == 'AMC-DRAFT-99'), isFalse);
+    });
+  });
+
+  group('SqliteDatabaseService (Relational Engine & Persistence)', () {
+    test('SqliteDatabaseService initializes, inserts, queries, and updates tickets', () async {
+      final sqlite = SqliteDatabaseService.instance;
+      await sqlite.init();
+
+      final sqliteTicket = CivicTicket(
+        ticketId: 'SQLITE-TICKET-01',
+        title: 'Water Main Burst (SQLite)',
+        issueCategory: 'Drainage & Storm Floods',
+        description: 'Underground pipeline rupture causing waterlogging on road',
+        severity: 'Critical',
+        area: 'Paldi Cross Road, Ward 15',
+        status: 'Assigned',
+        createdAt: DateTime.now(),
+        ward: const WardInfo(
+          wardName: 'Paldi',
+          wardNumber: 15,
+          zone: 'West Zone',
+          wardOffice: 'Paldi Sub-Office',
+          inspectorName: 'S. Mehta',
+          phone: '+91 79 2657 1122',
+        ),
+        department: const DepartmentInfo(
+          code: 'DRAINAGE',
+          name: 'Drainage & Water Supply',
+          headOfficer: 'Superintending Engineer',
+          slaHours: 12,
+          icon: Icons.water_drop_outlined,
+        ),
+      );
+
+      await sqlite.insertTicket(sqliteTicket);
+      final queryAll = sqlite.queryTickets();
+      expect(queryAll.any((t) => t.ticketId == 'SQLITE-TICKET-01'), isTrue);
+
+      final searchResult = sqlite.queryTickets(searchQuery: 'Paldi');
+      expect(searchResult.any((t) => t.ticketId == 'SQLITE-TICKET-01'), isTrue);
+
+      final updated = await sqlite.updateTicketStatus('SQLITE-TICKET-01', 'In Progress', notes: 'Repair crew on site');
+      expect(updated, isTrue);
+
+      final updatedTicket = sqlite.queryTickets().firstWhere((t) => t.ticketId == 'SQLITE-TICKET-01');
+      expect(updatedTicket.status, 'In Progress');
+      expect(updatedTicket.fieldNotes, 'Repair crew on site');
+    });
+
+    test('SqliteDatabaseService queues drafts, manages citizen profile and audit logs', () async {
+      final sqlite = SqliteDatabaseService.instance;
+      await sqlite.init();
+
+      final draftTicket = CivicTicket(
+        ticketId: 'SQLITE-DRAFT-02',
+        title: 'Broken Manhole Cover',
+        issueCategory: 'Pothole',
+        description: 'Dangerous opening on pedestrian path',
+        severity: 'High',
+        area: 'Navrangpura Ward 10',
+        status: 'Registered',
+        createdAt: DateTime.now(),
+        ward: const WardInfo(
+          wardName: 'Navrangpura',
+          wardNumber: 10,
+          zone: 'West Zone',
+          wardOffice: 'Navrangpura Ward Office',
+          inspectorName: 'R. Shah',
+          phone: '+91 79 2656 4455',
+        ),
+        department: const DepartmentInfo(
+          code: 'ROAD_ENG',
+          name: 'Roads & Infrastructure',
+          headOfficer: 'City Engineer',
+          slaHours: 24,
+          icon: Icons.car_crash_rounded,
+        ),
+      );
+
+      await sqlite.queueDraft(draftTicket);
+      final pendingDrafts = sqlite.queryPendingDrafts();
+      expect(pendingDrafts.any((d) => d['ticket_id'] == 'SQLITE-DRAFT-02'), isTrue);
+
+      await sqlite.markDraftSynced('SQLITE-DRAFT-02');
+      final remainingDrafts = sqlite.queryPendingDrafts();
+      expect(remainingDrafts.any((d) => d['ticket_id'] == 'SQLITE-DRAFT-02'), isFalse);
+
+      // Citizen profile
+      await sqlite.saveProfile({
+        'name': 'Priya Patel',
+        'email': 'priya.patel@amc.gov.in',
+        'ward': 'Ward 10 - Navrangpura',
+      });
+      final profile = sqlite.getProfile();
+      expect(profile?['name'], 'Priya Patel');
+
+      // Audit logs
+      final logs = sqlite.getAuditLogs();
+      expect(logs.isNotEmpty, isTrue);
     });
   });
 }

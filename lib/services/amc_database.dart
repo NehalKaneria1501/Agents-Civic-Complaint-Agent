@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/civic_models.dart';
 import 'firestore_service.dart';
 import 'offline_database_service.dart';
+import 'sqlite_database_service.dart';
 
 // ==========================================
 // REACTIVE AMC DATABASE & MUNICIPAL LEDGER
@@ -173,6 +174,7 @@ class AmcDatabase {
   void _loadOfflineAndSync() async {
     try {
       await OfflineDatabaseService.instance.init();
+      await SqliteDatabaseService.instance.init();
       final offline = OfflineDatabaseService.instance.getOfflineTickets();
       if (offline.isNotEmpty) {
         for (final off in offline) {
@@ -184,16 +186,22 @@ class AmcDatabase {
         // Cache initial seed tickets offline
         await OfflineDatabaseService.instance.saveAllTickets(tickets);
       }
+      // Sync into SQLite relational table
+      final sqliteTickets = SqliteDatabaseService.instance.queryTickets();
+      if (sqliteTickets.isEmpty) {
+        await SqliteDatabaseService.instance.insertAllTickets(tickets);
+      }
     } catch (_) {}
     _syncWithFirestore();
   }
 
   void _syncWithFirestore() async {
     try {
-      // Sync tickets to Firestore and Offline DB in background
+      // Sync tickets to Firestore, Offline DB and SQLite in background
       for (final t in tickets) {
         FirestoreService.instance.saveTicket(t);
         OfflineDatabaseService.instance.saveTicket(t);
+        SqliteDatabaseService.instance.insertTicket(t);
       }
     } catch (_) {}
   }
@@ -256,8 +264,9 @@ class AmcDatabase {
 
     tickets.insert(0, newTicket);
 
-    // Persist to Offline Database & Cloud Firestore (civic-complaint-agent-dee84)
+    // Persist to Offline Database, SQLite Database & Cloud Firestore (civic-complaint-agent-dee84)
     OfflineDatabaseService.instance.saveTicket(newTicket);
+    SqliteDatabaseService.instance.insertTicket(newTicket);
     FirestoreService.instance.saveTicket(newTicket);
 
     return newTicket;
@@ -266,6 +275,7 @@ class AmcDatabase {
   void addTicket(CivicTicket ticket) {
     tickets.insert(0, ticket);
     OfflineDatabaseService.instance.saveTicket(ticket);
+    SqliteDatabaseService.instance.insertTicket(ticket);
     FirestoreService.instance.saveTicket(ticket);
   }
 

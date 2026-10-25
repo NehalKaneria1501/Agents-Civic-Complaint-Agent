@@ -176,8 +176,8 @@ class _CivicPhotoRendererState extends State<CivicPhotoRenderer> {
                     ),
                   ),
 
-                // 6. Footer Geotag & Metadata Details
-                if (showBadge && !isCompact)
+                // 6. Footer Geotag & Metadata Details (hidden if customOverlay is present to avoid collision)
+                if (showBadge && !isCompact && customOverlay == null)
                   Positioned(
                     bottom: 8,
                     left: 8,

@@ -211,19 +211,25 @@ class _CivicMapScreenState extends State<CivicMapScreen> {
           Expanded(
             child: Text(
               'Showing $count municipal incident pins in Ahmedabad Ward 4',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
             ),
           ),
-          TextButton.icon(
-            onPressed: () {
-              GoogleMapsService.openMapLocation(
-                latitude: 23.0365,
-                longitude: 72.5126,
-                label: 'AMC Active Civic Clusters',
-              );
-            },
-            icon: const Icon(Icons.open_in_new_rounded, size: 14),
-            label: const Text('Google Maps', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: TextButton.icon(
+              onPressed: () {
+                GoogleMapsService.openMapLocation(
+                  latitude: 23.0365,
+                  longitude: 72.5126,
+                  label: 'AMC Active Civic Clusters',
+                );
+              },
+              icon: const Icon(Icons.open_in_new_rounded, size: 14),
+              label: const Text('Google Maps', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
           ),
         ],
       ),
@@ -472,6 +478,8 @@ class _CivicMapScreenState extends State<CivicMapScreen> {
                       ),
                       Text(
                         '${ticket.ward.wardName} • Status: ${ticket.status}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 11.5, color: CivicColors.onSurfaceVariant),
                       ),
                     ],
@@ -503,7 +511,10 @@ class _CivicMapScreenState extends State<CivicMapScreen> {
                       );
                     },
                     icon: const Icon(Icons.place_rounded, size: 16),
-                    label: const Text('Open Map', style: TextStyle(fontSize: 12)),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Open Map', style: TextStyle(fontSize: 12)),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -520,7 +531,10 @@ class _CivicMapScreenState extends State<CivicMapScreen> {
                       );
                     },
                     icon: const Icon(Icons.directions_rounded, size: 16),
-                    label: const Text('Directions', style: TextStyle(fontSize: 12)),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Directions', style: TextStyle(fontSize: 12)),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: CivicColors.primary,
                       foregroundColor: Colors.white,

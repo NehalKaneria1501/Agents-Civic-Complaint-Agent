@@ -120,7 +120,15 @@ class _CrewLiveTrackingScreenState extends State<CrewLiveTrackingScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Dest: ${ticket.area}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                          Expanded(
+                            child: Text(
+                              'Dest: ${ticket.area}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           const Text('ETA: 14 Mins (1.8 km)', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
@@ -260,6 +268,8 @@ class _CrewLiveTrackingScreenState extends State<CrewLiveTrackingScreen> {
           Expanded(
             child: Text(
               title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
@@ -267,6 +277,7 @@ class _CrewLiveTrackingScreenState extends State<CrewLiveTrackingScreen> {
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(time, style: const TextStyle(fontSize: 11, color: CivicColors.onSurfaceVariant)),
         ],
       ),
