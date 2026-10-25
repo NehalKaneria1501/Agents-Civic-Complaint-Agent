@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:agentsciviccomplaintagent/models/civic_models.dart';
 import 'package:agentsciviccomplaintagent/repositories/civic_repository.dart';
 import 'package:agentsciviccomplaintagent/blocs/profile/profile_cubit.dart';
-import 'package:agentsciviccomplaintagent/blocs/profile/profile_state.dart';
 import 'package:agentsciviccomplaintagent/blocs/tickets/tickets_bloc.dart';
 import 'package:agentsciviccomplaintagent/blocs/tickets/tickets_event.dart';
 import 'package:agentsciviccomplaintagent/blocs/tickets/tickets_state.dart';

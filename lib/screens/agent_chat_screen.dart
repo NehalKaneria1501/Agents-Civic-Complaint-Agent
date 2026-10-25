@@ -62,55 +62,64 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // When keyboard opens or screen is compact, height drops below 480
+        final isKeyboardOrCompact = constraints.maxHeight < 480;
 
-    return BlocConsumer<ChatBloc, ChatState>(
-      listener: (context, state) {
-        _scrollToBottom();
-      },
-      builder: (context, state) {
-        return Column(
-          children: [
-            // Header Agent Context Banner (collapses when keyboard is active to prevent squashing)
-            if (!isKeyboardOpen) _buildContextBanner(),
+        return BlocConsumer<ChatBloc, ChatState>(
+          listener: (context, state) {
+            _scrollToBottom();
+          },
+          builder: (context, state) {
+            return Column(
+              children: [
+                // Header Agent Context Banner (collapses when keyboard is active to prevent squashing)
+                if (!isKeyboardOrCompact) _buildContextBanner(),
 
-            // Chat Message List
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: state.messages.length,
-                itemBuilder: (ctx, i) => _buildMessageRow(state.messages[i]),
-              ),
-            ),
-
-            // Agent Processing Status Bar
-            if (state.isProcessing)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: CivicColors.primary,
-                child: Row(
-                  children: [
-                    const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      state.stepLabel,
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ],
+                // Chat Message List
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: state.messages.length,
+                    itemBuilder: (ctx, i) => _buildMessageRow(state.messages[i]),
+                  ),
                 ),
-              ),
 
-            // Quick Suggestion Pills (shown when keyboard is dismissed)
-            if (!isKeyboardOpen) _buildSuggestionPills(),
+                // Agent Processing Status Bar
+                if (state.isProcessing)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    color: CivicColors.primary,
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            state.stepLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-            // Chat Input Bar
-            _buildInputBar(),
-          ],
+                // Quick Suggestion Pills (shown when keyboard is dismissed)
+                if (!isKeyboardOrCompact) _buildSuggestionPills(),
+
+                // Chat Input Bar
+                _buildInputBar(isKeyboardOrCompact: isKeyboardOrCompact),
+              ],
+            );
+          },
         );
       },
     );
@@ -415,19 +424,21 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
     );
   }
 
-  Widget _buildInputBar() {
+  Widget _buildInputBar({bool isKeyboardOrCompact = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: isKeyboardOrCompact ? 6 : 10),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: CivicColors.outlineVariant.withValues(alpha: 0.3))),
       ),
       child: SafeArea(
+        top: false,
+        bottom: !isKeyboardOrCompact,
         child: Row(
           children: [
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                 decoration: BoxDecoration(
                   color: CivicColors.surfaceLow,
                   borderRadius: BorderRadius.circular(20),
@@ -437,12 +448,17 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
                     Expanded(
                       child: TextField(
                         controller: _textController,
+                        maxLines: 3,
+                        minLines: 1,
+                        textInputAction: TextInputAction.send,
                         onTap: () => Future.delayed(const Duration(milliseconds: 250), _scrollToBottom),
                         onSubmitted: (val) => _handleUserMessage(val),
                         decoration: const InputDecoration(
                           hintText: 'Message CivicBot...',
                           hintStyle: TextStyle(fontSize: 13, color: CivicColors.onSurfaceVariant),
                           border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(vertical: 8),
                         ),
                       ),
                     ),
@@ -500,115 +516,121 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
   void _showChatAttachmentOptions() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Attach Civic Evidence',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: CivicColors.primary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.camera_alt_rounded, color: CivicColors.primary, size: 22),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Attach Civic Evidence',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
                   ),
-                  title: const Text('Take Photo from Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  subtitle: const Text('Capture live pothole, garbage, or streetlight evidence', style: TextStyle(fontSize: 12)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _openCameraFromChat();
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: CivicColors.secondary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+                  const SizedBox(height: 12),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: CivicColors.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded, color: CivicColors.primary, size: 22),
                     ),
-                    child: const Icon(Icons.photo_library_rounded, color: CivicColors.secondary, size: 22),
+                    title: const Text('Take Photo from Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Capture live pothole, garbage, or streetlight evidence', style: TextStyle(fontSize: 12)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _openCameraFromChat();
+                    },
                   ),
-                  title: const Text('Upload Photo from Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  subtitle: const Text('Select existing incident photo from your phone gallery', style: TextStyle(fontSize: 12)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _openGalleryFromChat();
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: CivicColors.tertiary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: CivicColors.secondary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.photo_library_rounded, color: CivicColors.secondary, size: 22),
                     ),
-                    child: const Icon(Icons.picture_as_pdf_rounded, color: CivicColors.tertiary, size: 22),
+                    title: const Text('Upload Photo from Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Select existing incident photo from your phone gallery', style: TextStyle(fontSize: 12)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _openGalleryFromChat();
+                    },
                   ),
-                  title: const Text('Attach Incident Document / PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  subtitle: const Text('Attach municipal complaint notice or inspection document', style: TextStyle(fontSize: 12)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    final pdfIncident = SampleIncident(
-                      key: 'pdf-${DateTime.now().millisecondsSinceEpoch}',
-                      title: 'Municipal Notice / PDF Document',
-                      issueCategory: 'Pothole & Broken Asphalt',
-                      defaultArea: 'Ahmedabad Municipal Area',
-                      description: 'Citizen attached official inspection PDF document for verification.',
-                      severity: 'High',
-                      departmentKey: 'pothole',
-                      icon: Icons.picture_as_pdf_rounded,
-                      accentColor: CivicColors.tertiary,
-                      gpsCoords: '23.0338° N, 72.5467° E (Document Ref)',
-                      photoUrl: sampleIncidents[0].photoUrl,
-                    );
-                    _handleUserMessage('Attached municipal inspection PDF document', samplePhoto: pdfIncident);
-                  },
-                ),
-                const SizedBox(height: 8),
-                const Divider(),
-                const SizedBox(height: 6),
-                const Text('Quick Test Scenarios (Demo Presets):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: CivicColors.onSurfaceVariant)),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: sampleIncidents.map((s) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ActionChip(
-                          avatar: Icon(s.icon, size: 14, color: s.accentColor),
-                          label: Text(s.title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _handleUserMessage('Reporting issue from photo evidence', samplePhoto: s);
-                          },
-                        ),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: CivicColors.tertiary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.picture_as_pdf_rounded, color: CivicColors.tertiary, size: 22),
+                    ),
+                    title: const Text('Attach Incident Document / PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Attach municipal complaint notice or inspection document', style: TextStyle(fontSize: 12)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      final pdfIncident = SampleIncident(
+                        key: 'pdf-${DateTime.now().millisecondsSinceEpoch}',
+                        title: 'Municipal Notice / PDF Document',
+                        issueCategory: 'Pothole & Broken Asphalt',
+                        defaultArea: 'Ahmedabad Municipal Area',
+                        description: 'Citizen attached official inspection PDF document for verification.',
+                        severity: 'High',
+                        departmentKey: 'pothole',
+                        icon: Icons.picture_as_pdf_rounded,
+                        accentColor: CivicColors.tertiary,
+                        gpsCoords: '23.0338° N, 72.5467° E (Document Ref)',
+                        photoUrl: sampleIncidents[0].photoUrl,
                       );
-                    }).toList(),
+                      _handleUserMessage('Attached municipal inspection PDF document', samplePhoto: pdfIncident);
+                    },
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  const SizedBox(height: 6),
+                  const Text('Quick Test Scenarios (Demo Presets):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: CivicColors.onSurfaceVariant)),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: sampleIncidents.map((s) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ActionChip(
+                            avatar: Icon(s.icon, size: 14, color: s.accentColor),
+                            label: Text(s.title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _handleUserMessage('Reporting issue from photo evidence', samplePhoto: s);
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

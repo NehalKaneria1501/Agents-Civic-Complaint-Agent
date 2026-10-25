@@ -350,6 +350,7 @@ class _CivicPhotoRendererState extends State<CivicPhotoRenderer> {
   }
 
   Widget _buildProceduralScene(_IncidentScene scene) {
+    final iconSize = height.isFinite && height > 0 ? (height * 0.42).clamp(24.0, 140.0) : 64.0;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -367,7 +368,7 @@ class _CivicPhotoRendererState extends State<CivicPhotoRenderer> {
           Center(
             child: Icon(
               scene.icon,
-              size: height * 0.42,
+              size: iconSize,
               color: scene.accentColor.withValues(alpha: 0.35),
             ),
           ),
