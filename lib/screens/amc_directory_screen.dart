@@ -792,12 +792,15 @@ class _AmcDirectoryScreenState extends State<AmcDirectoryScreen> with SingleTick
                       child: OutlinedButton.icon(
                         onPressed: () => _callPhone(l['phone'] as String),
                         icon: const Icon(Icons.phone_rounded, size: 15),
-                        label: Text(l['phone'] as String, style: const TextStyle(fontSize: 11.5)),
+                        label: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(l['phone'] as String, style: const TextStyle(fontSize: 11.5)),
+                        ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: CivicColors.primary,
                           side: const BorderSide(color: CivicColors.primary),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                         ),
                       ),
                     ),
@@ -812,12 +815,15 @@ class _AmcDirectoryScreenState extends State<AmcDirectoryScreen> with SingleTick
                           );
                         },
                         icon: const Icon(Icons.navigation_rounded, size: 15),
-                        label: const Text('Google Maps', style: TextStyle(fontSize: 11.5)),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Google Maps', style: TextStyle(fontSize: 11.5)),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: l['color'] as Color,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                         ),
                       ),
                     ),
@@ -1112,11 +1118,15 @@ class _AmcDirectoryScreenState extends State<AmcDirectoryScreen> with SingleTick
                           child: OutlinedButton.icon(
                             onPressed: () => _callPhone(w['phone'] as String),
                             icon: const Icon(Icons.phone_rounded, size: 14),
-                            label: Text(w['phone'] as String, style: const TextStyle(fontSize: 11)),
+                            label: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(w['phone'] as String, style: const TextStyle(fontSize: 11)),
+                            ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: CivicColors.primary,
                               side: const BorderSide(color: CivicColors.primary),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                             ),
                           ),
                         ),
@@ -1131,11 +1141,15 @@ class _AmcDirectoryScreenState extends State<AmcDirectoryScreen> with SingleTick
                               );
                             },
                             icon: const Icon(Icons.place_rounded, size: 14),
-                            label: const Text('Ward on Map', style: TextStyle(fontSize: 11)),
+                            label: const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text('Ward on Map', style: TextStyle(fontSize: 11)),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: CivicColors.primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                             ),
                           ),
                         ),

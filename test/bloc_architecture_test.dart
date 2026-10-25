@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:agentsciviccomplaintagent/repositories/civic_repository.dart';
 import 'package:agentsciviccomplaintagent/blocs/profile/profile_cubit.dart';
@@ -8,6 +9,8 @@ import 'package:agentsciviccomplaintagent/blocs/chat/chat_bloc.dart';
 import 'package:agentsciviccomplaintagent/blocs/chat/chat_state.dart';
 import 'package:agentsciviccomplaintagent/services/google_maps_service.dart';
 import 'package:agentsciviccomplaintagent/services/firebase_ai_logic_service.dart';
+import 'package:agentsciviccomplaintagent/services/offline_database_service.dart';
+import 'package:agentsciviccomplaintagent/models/civic_models.dart';
 
 void main() {
   group('ProfileCubit (MVVM Citizen ViewModel)', () {
@@ -146,6 +149,83 @@ void main() {
       expect(result.googleMapsDirectionsUrl, contains('google.com/maps/dir'));
       expect(result.latitude, isNotNull);
       expect(result.longitude, isNotNull);
+    });
+  });
+
+  group('OfflineDatabaseService (Offline-First Local Storage)', () {
+    test('OfflineDatabaseService saves and retrieves tickets offline', () async {
+      final db = OfflineDatabaseService.instance;
+      await db.init();
+
+      final offlineTicket = CivicTicket(
+        ticketId: 'AMC-OFFLINE-TEST-1',
+        title: 'Offline Water Leakage',
+        issueCategory: 'Water & Drainage',
+        description: 'Underground pipeline leakage reported offline',
+        severity: 'Medium',
+        area: 'Paldi Ward 15',
+        status: 'Registered',
+        createdAt: DateTime.now(),
+        ward: const WardInfo(
+          wardName: 'Paldi',
+          wardNumber: 15,
+          zone: 'South-West',
+          wardOffice: 'Paldi Sub-Center',
+          inspectorName: 'S. K. Mehta',
+          phone: '+91 79 2657 0000',
+        ),
+        department: const DepartmentInfo(
+          code: 'DRAINAGE',
+          name: 'Water & Sewerage Directorate',
+          headOfficer: 'Superintending Engineer',
+          slaHours: 12,
+          icon: Icons.water_drop_outlined,
+        ),
+      );
+
+      await db.saveTicket(offlineTicket);
+      final tickets = db.getOfflineTickets();
+
+      expect(tickets.any((t) => t.ticketId == 'AMC-OFFLINE-TEST-1'), isTrue);
+    });
+
+    test('OfflineDatabaseService queues offline drafts and handles sync', () async {
+      final db = OfflineDatabaseService.instance;
+      await db.init();
+
+      final draftTicket = CivicTicket(
+        ticketId: 'AMC-DRAFT-99',
+        title: 'Offline Draft Waste Spillage',
+        issueCategory: 'Solid Waste',
+        description: 'Bin overflow waiting for internet to sync',
+        severity: 'Normal',
+        area: 'Ellisbridge Ward 42',
+        status: 'Registered',
+        createdAt: DateTime.now(),
+        ward: const WardInfo(
+          wardName: 'Ellisbridge',
+          wardNumber: 42,
+          zone: 'Central',
+          wardOffice: 'Ellisbridge Ward Office',
+          inspectorName: 'M. Patel',
+          phone: '+91 79 2658 0000',
+        ),
+        department: const DepartmentInfo(
+          code: 'SWM',
+          name: 'Solid Waste Management',
+          headOfficer: 'Director SWM',
+          slaHours: 24,
+          icon: Icons.delete_outline_rounded,
+        ),
+      );
+
+      await db.queueOfflineDraft(draftTicket);
+      final pending = db.getPendingDrafts();
+      expect(pending.any((d) => d['ticketId'] == 'AMC-DRAFT-99'), isTrue);
+
+      await db.markDraftSynced('AMC-DRAFT-99');
+      final pendingAfter = db.getPendingDrafts();
+      expect(pendingAfter.any((d) => d['ticketId'] == 'AMC-DRAFT-99'), isFalse);
     });
   });
 }

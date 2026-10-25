@@ -364,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
         CarouselSlider(
           options: CarouselOptions(
-            height: 215.0,
+            height: 228.0,
             autoPlay: true,
             autoPlayInterval: const Duration(seconds: 4),
             autoPlayAnimationDuration: const Duration(milliseconds: 650),
@@ -435,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 category: service.category,
                 title: service.title,
                 gpsCoords: '23.0225° N, 72.5714° E',
-                height: 215,
+                height: 228,
                 width: double.infinity,
                 showBadge: false,
               ),

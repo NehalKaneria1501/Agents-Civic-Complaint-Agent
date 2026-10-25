@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import '../models/civic_models.dart';
 import 'firestore_service.dart';
+import 'offline_database_service.dart';
 
 // ==========================================
 // REACTIVE AMC DATABASE & MUNICIPAL LEDGER
-// Syncs local reactive state with Cloud Firestore
+// Offline-First: Syncs local reactive state with
+// OfflineDatabaseService and Cloud Firestore
 // ==========================================
 
 class AmcDatabase {
   static final AmcDatabase instance = AmcDatabase._internal();
   AmcDatabase._internal() {
     _seedInitialTickets();
-    _syncWithFirestore();
+    _loadOfflineAndSync();
   }
 
   final List<CivicTicket> tickets = [];
@@ -168,11 +170,30 @@ class AmcDatabase {
     );
   }
 
+  void _loadOfflineAndSync() async {
+    try {
+      await OfflineDatabaseService.instance.init();
+      final offline = OfflineDatabaseService.instance.getOfflineTickets();
+      if (offline.isNotEmpty) {
+        for (final off in offline) {
+          if (!tickets.any((t) => t.ticketId == off.ticketId)) {
+            tickets.insert(0, off);
+          }
+        }
+      } else {
+        // Cache initial seed tickets offline
+        await OfflineDatabaseService.instance.saveAllTickets(tickets);
+      }
+    } catch (_) {}
+    _syncWithFirestore();
+  }
+
   void _syncWithFirestore() async {
     try {
-      // Sync initial seeded tickets to Firestore in background
+      // Sync tickets to Firestore and Offline DB in background
       for (final t in tickets) {
         FirestoreService.instance.saveTicket(t);
+        OfflineDatabaseService.instance.saveTicket(t);
       }
     } catch (_) {}
   }
@@ -235,7 +256,8 @@ class AmcDatabase {
 
     tickets.insert(0, newTicket);
 
-    // Persist to Cloud Firestore (civic-complaint-agent-dee84)
+    // Persist to Offline Database & Cloud Firestore (civic-complaint-agent-dee84)
+    OfflineDatabaseService.instance.saveTicket(newTicket);
     FirestoreService.instance.saveTicket(newTicket);
 
     return newTicket;
@@ -243,6 +265,7 @@ class AmcDatabase {
 
   void addTicket(CivicTicket ticket) {
     tickets.insert(0, ticket);
+    OfflineDatabaseService.instance.saveTicket(ticket);
     FirestoreService.instance.saveTicket(ticket);
   }
 
@@ -266,6 +289,7 @@ class AmcDatabase {
     } else {
       ticket.status = 'Assigned';
     }
+    OfflineDatabaseService.instance.saveTicket(ticket);
     FirestoreService.instance.updateStatus(ticket.ticketId, ticket.status, notes: ticket.fieldNotes);
   }
 
@@ -274,6 +298,7 @@ class AmcDatabase {
       if (t.ticketId == ticketId) {
         t.status = newStatus;
         if (notes != null) t.fieldNotes = notes;
+        OfflineDatabaseService.instance.saveTicket(t);
         FirestoreService.instance.updateStatus(ticketId, newStatus, notes: notes);
         break;
       }
