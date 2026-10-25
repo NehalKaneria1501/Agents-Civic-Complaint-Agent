@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 import '../models/civic_models.dart';
 
 // ==========================================
@@ -9,6 +12,7 @@ import '../models/civic_models.dart';
 // High-Performance Structured SQLite Engine
 // Tables: tickets, drafts, citizen_profile, audit_logs
 // Full SQL query, CRUD, filtering & offline persistence
+// Backed by sqflite native driver with resilient local disk cache
 // ==========================================
 
 class SqliteDatabaseService {
@@ -17,6 +21,11 @@ class SqliteDatabaseService {
 
   bool _isInitialized = false;
   File? _sqliteDbFile;
+  sqflite.Database? _nativeDb;
+  bool _usingNativeDb = false;
+
+  /// Returns true if native SQLite engine is currently active
+  bool get isNativeDbActive => _usingNativeDb && _nativeDb != null;
 
   // In-memory relational tables cache backed by persistent sqlite disk representation
   final Map<String, List<Map<String, dynamic>>> _tables = {
@@ -30,6 +39,102 @@ class SqliteDatabaseService {
   Future<void> init() async {
     if (_isInitialized) return;
 
+    // 1. Attempt native sqflite initialization first
+    try {
+      if (!kIsWeb) {
+        final databasesPath = await sqflite.getDatabasesPath();
+        final dbPath = p.join(databasesPath, 'amc_civic_complaints.db');
+        _nativeDb = await sqflite.openDatabase(
+          dbPath,
+          version: 1,
+          onCreate: (db, version) async {
+            await db.execute('''
+              CREATE TABLE IF NOT EXISTS tickets (
+                ticket_id TEXT PRIMARY KEY,
+                title TEXT,
+                category TEXT,
+                description TEXT,
+                severity TEXT,
+                area TEXT,
+                status TEXT,
+                field_notes TEXT,
+                squad_id TEXT,
+                photo_url TEXT,
+                follow_up_photo_url TEXT,
+                created_at TEXT,
+                depth_cm INTEGER,
+                is_escalated INTEGER,
+                ward_name TEXT,
+                ward_number INTEGER,
+                ward_zone TEXT,
+                ward_office TEXT,
+                ward_inspector TEXT,
+                ward_phone TEXT,
+                department_code TEXT,
+                department_name TEXT,
+                department_head TEXT,
+                department_sla INTEGER
+              )
+            ''');
+            await db.execute('''
+              CREATE TABLE IF NOT EXISTS drafts (
+                id TEXT PRIMARY KEY,
+                ticket_id TEXT,
+                title TEXT,
+                category TEXT,
+                description TEXT,
+                area TEXT,
+                queued_at TEXT,
+                is_synced INTEGER,
+                payload TEXT
+              )
+            ''');
+            await db.execute('''
+              CREATE TABLE IF NOT EXISTS citizen_profile (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at TEXT
+              )
+            ''');
+            await db.execute('''
+              CREATE TABLE IF NOT EXISTS audit_logs (
+                log_id TEXT PRIMARY KEY,
+                ticket_id TEXT,
+                action TEXT,
+                details TEXT,
+                timestamp TEXT
+              )
+            ''');
+          },
+        );
+
+        _usingNativeDb = _nativeDb != null;
+        if (_usingNativeDb) {
+          final ticketRows = await _nativeDb!.query('tickets');
+          if (ticketRows.isNotEmpty) {
+            _tables['tickets'] = List<Map<String, dynamic>>.from(ticketRows);
+          }
+          final draftRows = await _nativeDb!.query('drafts');
+          if (draftRows.isNotEmpty) {
+            _tables['drafts'] = List<Map<String, dynamic>>.from(draftRows);
+          }
+          final profileRows = await _nativeDb!.query('citizen_profile');
+          if (profileRows.isNotEmpty) {
+            _tables['citizen_profile'] = List<Map<String, dynamic>>.from(profileRows);
+          }
+          final logRows = await _nativeDb!.query('audit_logs');
+          if (logRows.isNotEmpty) {
+            _tables['audit_logs'] = List<Map<String, dynamic>>.from(logRows);
+          }
+          debugPrint('✓ Native SQLite engine active at $dbPath (cached tickets: ${_tables['tickets']!.length})');
+        }
+      }
+    } catch (e) {
+      debugPrint('ℹ Native SQLite driver notice (falling back to structured disk ledger): $e');
+      _usingNativeDb = false;
+    }
+
+    // 2. Structured local disk fallback/cache
     try {
       final dir = await _resolveDatabaseDirectory();
       if (dir != null) {
@@ -40,15 +145,16 @@ class SqliteDatabaseService {
             final data = jsonDecode(content) as Map<String, dynamic>;
             for (final entry in data.entries) {
               if (_tables.containsKey(entry.key) && entry.value is List) {
-                _tables[entry.key] = List<Map<String, dynamic>>.from(
-                  (entry.value as List).map((e) => Map<String, dynamic>.from(e as Map)),
-                );
+                if (_tables[entry.key]!.isEmpty) {
+                  _tables[entry.key] = List<Map<String, dynamic>>.from(
+                    (entry.value as List).map((e) => Map<String, dynamic>.from(e as Map)),
+                  );
+                }
               }
             }
             debugPrint('✓ SQLite database loaded from ${_sqliteDbFile!.path} with ${_tables['tickets']!.length} tickets');
           }
         } else {
-          // Create SQLite Schema
           await _executeInitialSchema();
           await _flushSqliteToDisk();
         }
@@ -60,9 +166,52 @@ class SqliteDatabaseService {
     }
   }
 
+  Future<void> _insertNative(String table, Map<String, dynamic> row) async {
+    if (_usingNativeDb && _nativeDb != null) {
+      try {
+        await _nativeDb!.insert(
+          table,
+          row,
+          conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+        );
+      } catch (e) {
+        debugPrint('! Native SQLite insert error: $e');
+      }
+    }
+  }
+
+  Future<void> _updateNative(String table, Map<String, dynamic> values, String where, List<dynamic> whereArgs) async {
+    if (_usingNativeDb && _nativeDb != null) {
+      try {
+        await _nativeDb!.update(table, values, where: where, whereArgs: whereArgs);
+      } catch (e) {
+        debugPrint('! Native SQLite update error: $e');
+      }
+    }
+  }
+
+  Future<void> _deleteNative(String table, String where, List<dynamic> whereArgs) async {
+    if (_usingNativeDb && _nativeDb != null) {
+      try {
+        await _nativeDb!.delete(table, where: where, whereArgs: whereArgs);
+      } catch (e) {
+        debugPrint('! Native SQLite delete error: $e');
+      }
+    }
+  }
+
   Future<Directory?> _resolveDatabaseDirectory() async {
     try {
       if (kIsWeb) return null;
+      try {
+        final appDir = await getApplicationDocumentsDirectory();
+        final target = Directory('${appDir.path}/AmcCivicComplaintAgent/sqlite');
+        if (!target.existsSync()) {
+          target.createSync(recursive: true);
+        }
+        return target;
+      } catch (_) {}
+
       final envPath = Platform.environment['APPDATA'] ??
           Platform.environment['LOCALAPPDATA'] ??
           Platform.environment['HOME'];
@@ -115,6 +264,7 @@ class SqliteDatabaseService {
       tickets.insert(0, row);
     }
 
+    await _insertNative('tickets', row);
     await logAction(ticket.ticketId, 'INSERT_OR_REPLACE', 'Saved ticket #${ticket.ticketId} into SQLite');
     await _flushSqliteToDisk();
     debugPrint('✓ SQLite: Inserted ticket #${ticket.ticketId}');
@@ -131,6 +281,7 @@ class SqliteDatabaseService {
       } else {
         _tables['tickets']!.add(row);
       }
+      await _insertNative('tickets', row);
     }
     await _flushSqliteToDisk();
     debugPrint('✓ SQLite: Bulk inserted ${ticketList.length} tickets');
@@ -171,6 +322,13 @@ class SqliteDatabaseService {
       if (notes != null) {
         tickets[index]['field_notes'] = notes;
       }
+      final updateValues = <String, dynamic>{
+        'status': newStatus,
+      };
+      if (notes != null) {
+        updateValues['field_notes'] = notes;
+      }
+      await _updateNative('tickets', updateValues, 'ticket_id = ?', [ticketId]);
       await logAction(ticketId, 'UPDATE_STATUS', 'Status changed to $newStatus in SQLite');
       await _flushSqliteToDisk();
       debugPrint('✓ SQLite: Updated ticket #$ticketId status to $newStatus');
@@ -186,6 +344,7 @@ class SqliteDatabaseService {
     _tables['tickets']!.removeWhere((r) => r['ticket_id'] == ticketId);
     final deleted = _tables['tickets']!.length < before;
     if (deleted) {
+      await _deleteNative('tickets', 'ticket_id = ?', [ticketId]);
       await logAction(ticketId, 'DELETE', 'Removed ticket from SQLite');
       await _flushSqliteToDisk();
     }
@@ -211,6 +370,7 @@ class SqliteDatabaseService {
       'payload': jsonEncode(_ticketToSqlRow(draft)),
     };
     _tables['drafts']!.insert(0, row);
+    await _insertNative('drafts', row);
     await insertTicket(draft);
     await _flushSqliteToDisk();
     debugPrint('✓ SQLite: Queued draft #${draft.ticketId}');
@@ -229,6 +389,7 @@ class SqliteDatabaseService {
         d['is_synced'] = 1;
       }
     }
+    await _updateNative('drafts', {'is_synced': 1}, 'ticket_id = ?', [ticketId]);
     await _flushSqliteToDisk();
     debugPrint('✓ SQLite: Draft #$ticketId marked synced');
   }
@@ -252,6 +413,7 @@ class SqliteDatabaseService {
     } else {
       list.add(row);
     }
+    await _insertNative('citizen_profile', row);
     await _flushSqliteToDisk();
   }
 
@@ -290,13 +452,15 @@ class SqliteDatabaseService {
   // ==========================================
 
   Future<void> logAction(String ticketId, String action, String details) async {
-    _tables['audit_logs']!.insert(0, {
+    final row = {
       'log_id': 'LOG-${DateTime.now().millisecondsSinceEpoch}',
       'ticket_id': ticketId,
       'action': action,
       'details': details,
       'timestamp': DateTime.now().toIso8601String(),
-    });
+    };
+    _tables['audit_logs']!.insert(0, row);
+    await _insertNative('audit_logs', row);
   }
 
   List<Map<String, dynamic>> getAuditLogs({int limit = 50}) {
