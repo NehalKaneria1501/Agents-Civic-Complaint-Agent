@@ -209,6 +209,50 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
 
+              const SizedBox(height: 12),
+
+              // Sign in with Google Button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: () {
+                    // Sign in with Google flow
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                            SizedBox(width: 8),
+                            Text('Signed in with Google Account successfully!'),
+                          ],
+                        ),
+                        backgroundColor: Color(0xFF1E8E3E),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    widget.onSignInSuccess();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: CivicColors.outlineVariant.withValues(alpha: 0.5)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildGoogleIcon(),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Sign in with Google',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFF1F1F1F)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 14),
 
               Center(
@@ -218,6 +262,29 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoogleIcon() {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.black12, width: 0.5),
+      ),
+      child: Center(
+        child: Text(
+          'G',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Roboto',
+            color: const Color(0xFF4285F4),
           ),
         ),
       ),

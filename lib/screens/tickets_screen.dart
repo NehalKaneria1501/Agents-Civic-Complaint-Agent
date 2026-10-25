@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/civic_models.dart';
 import '../services/amc_database.dart';
+import '../services/google_maps_service.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_photo_renderer.dart';
 import '../blocs/tickets/tickets_bloc.dart';
@@ -10,7 +11,7 @@ import '../blocs/tickets/tickets_state.dart';
 
 // ==========================================
 // SCREEN: TICKETS LEDGER SCREEN (MVVM VIEW)
-// Shows all tickets with reactive Bloc state and status filter chips
+// Shows all tickets with reactive Bloc state, search, status filter chips & GPS Map Navigation
 // ==========================================
 
 class TicketsLedgerScreen extends StatefulWidget {
@@ -23,6 +24,27 @@ class TicketsLedgerScreen extends StatefulWidget {
 }
 
 class _TicketsLedgerScreenState extends State<TicketsLedgerScreen> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Synchronize tickets on mount
+    context.read<TicketsBloc>().add(const LoadTicketsEvent());
+    _searchCtrl.addListener(() {
+      setState(() {
+        _searchQuery = _searchCtrl.text.trim().toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TicketsBloc, TicketsState>(
@@ -35,65 +57,126 @@ class _TicketsLedgerScreenState extends State<TicketsLedgerScreen> {
           activeFilter = state.activeFilter;
         }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'My Tickets & Status',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: CivicColors.primaryContainer.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${displayedTickets.length} Registered',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: CivicColors.onPrimaryContainer),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+        // Apply local search filtering
+        if (_searchQuery.isNotEmpty) {
+          displayedTickets = displayedTickets.where((t) {
+            final idMatch = t.ticketId.toLowerCase().contains(_searchQuery);
+            final titleMatch = t.title.toLowerCase().contains(_searchQuery);
+            final areaMatch = t.area.toLowerCase().contains(_searchQuery);
+            final deptMatch = t.department.name.toLowerCase().contains(_searchQuery);
+            final catMatch = t.issueCategory.toLowerCase().contains(_searchQuery);
+            return idMatch || titleMatch || areaMatch || deptMatch || catMatch;
+          }).toList();
+        }
 
-              // Reactive Status Filter Chips (MVVM ViewModel Binding)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: ['All', 'Registered', 'Assigned', 'In Progress', 'Resolved'].map((filter) {
-                    final isSelected = activeFilter.toLowerCase() == filter.toLowerCase();
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(filter, style: TextStyle(fontSize: 11.5, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                        selected: isSelected,
-                        selectedColor: CivicColors.primaryContainer.withValues(alpha: 0.3),
-                        checkmarkColor: CivicColors.primary,
-                        onSelected: (_) {
-                          context.read<TicketsBloc>().add(FilterTicketsEvent(filter));
-                        },
+        return RefreshIndicator(
+          color: CivicColors.primary,
+          onRefresh: () async {
+            context.read<TicketsBloc>().add(const LoadTicketsEvent());
+            await Future.delayed(const Duration(milliseconds: 300));
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'My Tickets & Status',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: CivicColors.primaryContainer.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                  }).toList(),
+                      child: Text(
+                        '${displayedTickets.length} Found',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: CivicColors.onPrimaryContainer),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
-              if (displayedTickets.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(28),
-                  alignment: Alignment.center,
-                  child: const Text('No tickets found for this category filter.', style: TextStyle(color: CivicColors.onSurfaceVariant)),
-                )
-              else
-                ...displayedTickets.map((t) => _buildTicketCard(context, t)),
-            ],
+                // Search Bar
+                TextField(
+                  controller: _searchCtrl,
+                  decoration: InputDecoration(
+                    hintText: 'Search ticket #, department, area...',
+                    hintStyle: const TextStyle(fontSize: 13, color: CivicColors.onSurfaceVariant),
+                    prefixIcon: const Icon(Icons.search, size: 20, color: CivicColors.primary),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () => _searchCtrl.clear(),
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: CivicColors.outlineVariant.withValues(alpha: 0.4)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: CivicColors.outlineVariant.withValues(alpha: 0.4)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: CivicColors.primary, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Reactive Status Filter Chips (MVVM ViewModel Binding)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: ['All', 'Registered', 'Assigned', 'In Progress', 'Resolved'].map((filter) {
+                      final isSelected = activeFilter.toLowerCase() == filter.toLowerCase();
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(filter, style: TextStyle(fontSize: 11.5, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                          selected: isSelected,
+                          selectedColor: CivicColors.primaryContainer.withValues(alpha: 0.3),
+                          checkmarkColor: CivicColors.primary,
+                          onSelected: (_) {
+                            context.read<TicketsBloc>().add(FilterTicketsEvent(filter));
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                if (displayedTickets.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    alignment: Alignment.center,
+                    child: Column(
+                      children: [
+                        Icon(Icons.inbox_outlined, size: 48, color: CivicColors.onSurfaceVariant.withValues(alpha: 0.5)),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'No tickets match your search or filter.',
+                          style: TextStyle(color: CivicColors.onSurfaceVariant, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ...displayedTickets.map((t) => _buildTicketCard(context, t)),
+              ],
+            ),
           ),
         );
       },
@@ -259,6 +342,21 @@ class _TicketsLedgerScreenState extends State<TicketsLedgerScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                // View on Google Maps
+                OutlinedButton.icon(
+                  onPressed: () {
+                    GoogleMapsService.openSearch('${t.title}, ${t.area}, Ahmedabad');
+                  },
+                  icon: const Icon(Icons.map_outlined, size: 13),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    minimumSize: const Size(50, 28),
+                    foregroundColor: CivicColors.secondary,
+                    side: BorderSide(color: CivicColors.secondary.withValues(alpha: 0.4)),
+                  ),
+                  label: const Text('Map', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () {
                     context.read<TicketsBloc>().add(AdvanceTicketStatusEvent(t));

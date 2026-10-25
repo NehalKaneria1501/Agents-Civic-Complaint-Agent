@@ -76,6 +76,22 @@ class GoogleMapsService {
     }
   }
 
+  /// Opens Google Maps with a free-form search query (e.g. area name, landmark or complaint location)
+  static Future<bool> openSearch(String query) async {
+    final encoded = Uri.encodeComponent(query);
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encoded');
+    try {
+      if (await canLaunchUrl(uri)) {
+        return await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        return await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      debugPrint('! Could not launch Google Maps search: $e');
+      return false;
+    }
+  }
+
   /// Constructs a Google Static Maps URL for lightweight previews
   static String buildStaticMapUrl({
     required double latitude,

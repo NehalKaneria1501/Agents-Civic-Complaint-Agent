@@ -47,6 +47,7 @@ export 'screens/profile_screen.dart';
 export 'screens/crew_tracking_screen.dart';
 export 'screens/feedback_screen.dart';
 export 'screens/civic_map_screen.dart';
+export 'screens/amc_directory_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

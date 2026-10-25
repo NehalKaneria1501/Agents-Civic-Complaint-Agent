@@ -6,6 +6,7 @@ import '../services/amc_database.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_photo_renderer.dart';
 import 'civic_map_screen.dart';
+import 'amc_directory_screen.dart';
 
 // ==========================================
 // SCREEN: HOME SCREEN (AMC CIVIC DASHBOARD)
@@ -55,6 +56,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _activeSlideIndex = 0;
+  bool _showAllCategories = false;
 
   static const List<MunicipalServiceSlide> _municipalServices = [
     MunicipalServiceSlide(
@@ -156,6 +158,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Direct Feedback & Suggestion / Grievance Portal Banner
           _buildFeedbackGrievanceBanner(context),
+          const SizedBox(height: 18),
+
+          // AMC Municipal Governance & 48 Wards Directory Card
+          _buildAmcDirectoryCard(context),
           const SizedBox(height: 24),
 
           // Quick Category Tiles (2x2 Grid)
@@ -715,7 +721,140 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildAmcDirectoryCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CivicColors.outlineVariant.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: CivicColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.account_balance_rounded, color: CivicColors.primary, size: 24),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'AMC Governance & 48 Wards',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: CivicColors.onSurface),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Mayor, Municipal Commissioner (IAS), CP (IPS), Standing Comm. & Wards',
+                  style: TextStyle(fontSize: 11, color: CivicColors.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AmcDirectoryScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: CivicColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: const Size(60, 32),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Directory', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuickCategories(BuildContext context) {
+    final allCategoryTiles = [
+      _buildCategoryTile(
+        context,
+        sampleIncidents[0],
+        'Pothole',
+        'Road & Asphalt',
+        Icons.car_crash_rounded,
+        CivicColors.primary,
+      ),
+      _buildCategoryTile(
+        context,
+        sampleIncidents[1],
+        'Garbage',
+        'Waste & Dumps',
+        Icons.delete_outline_rounded,
+        CivicColors.tertiary,
+      ),
+      _buildCategoryTile(
+        context,
+        sampleIncidents[2],
+        'Streetlight',
+        'Outages & Poles',
+        Icons.lightbulb_outline_rounded,
+        CivicColors.secondary,
+      ),
+      _buildCategoryTile(
+        context,
+        sampleIncidents[3],
+        'Water Logging',
+        'Drainage & Floods',
+        Icons.water_drop_outlined,
+        CivicColors.primaryContainer,
+      ),
+      _buildCategoryTile(
+        context,
+        sampleIncidents[0],
+        'Water Supply',
+        'Pipeline Leaks',
+        Icons.plumbing_rounded,
+        const Color(0xFF0284C7),
+      ),
+      _buildCategoryTile(
+        context,
+        sampleIncidents[1],
+        'Encroachment',
+        'Estate & Land',
+        Icons.storefront_rounded,
+        const Color(0xFF9333EA),
+      ),
+      _buildCategoryTile(
+        context,
+        sampleIncidents[2],
+        'Stray Animals',
+        'CNCD Cattle Squad',
+        Icons.pets_rounded,
+        const Color(0xFFD97706),
+      ),
+      _buildCategoryTile(
+        context,
+        sampleIncidents[3],
+        'Vector Control',
+        'Malaria & Dengue',
+        Icons.pest_control_rounded,
+        const Color(0xFF10B981),
+      ),
+    ];
+
+    final displayed = _showAllCategories ? allCategoryTiles : allCategoryTiles.take(4).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -726,54 +865,52 @@ class _HomeScreenState extends State<HomeScreen> {
               'Quick Categories',
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
             ),
-            Text(
-              'View All',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: CivicColors.primary),
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _showAllCategories = !_showAllCategories;
+                });
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: CivicColors.primaryContainer.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: CivicColors.primary.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _showAllCategories ? 'Show Less' : 'View All (8)',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: CivicColors.primary),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      _showAllCategories ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: CivicColors.primary,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 14),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.28,
-          children: [
-            _buildCategoryTile(
-              context,
-              sampleIncidents[0],
-              'Pothole',
-              'Road & Asphalt',
-              Icons.car_crash_rounded,
-              CivicColors.primary,
-            ),
-            _buildCategoryTile(
-              context,
-              sampleIncidents[1],
-              'Garbage',
-              'Waste & Dumps',
-              Icons.delete_outline_rounded,
-              CivicColors.tertiary,
-            ),
-            _buildCategoryTile(
-              context,
-              sampleIncidents[2],
-              'Streetlight',
-              'Outages & Poles',
-              Icons.lightbulb_outline_rounded,
-              CivicColors.secondary,
-            ),
-            _buildCategoryTile(
-              context,
-              sampleIncidents[3],
-              'Water Logging',
-              'Drainage & Floods',
-              Icons.water_drop_outlined,
-              CivicColors.primaryContainer,
-            ),
-          ],
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: GridView.count(
+            key: ValueKey<bool>(_showAllCategories),
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.28,
+            children: displayed,
+          ),
         ),
       ],
     );
