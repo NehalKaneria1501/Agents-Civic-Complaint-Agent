@@ -730,27 +730,29 @@ class _AmcDirectoryScreenState extends State<AmcDirectoryScreen> with SingleTick
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 6,
+                            runSpacing: 4,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  l['role'] as String,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: l['color'] as Color,
-                                  ),
+                              Text(
+                                l['role'] as String,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: l['color'] as Color,
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: CivicColors.surfaceContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   l['tag'] as String,
-                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -970,13 +972,15 @@ class _AmcDirectoryScreenState extends State<AmcDirectoryScreen> with SingleTick
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 6,
+                            runSpacing: 4,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  o['name'] as String,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
-                                ),
+                              Text(
+                                o['name'] as String,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -986,7 +990,7 @@ class _AmcDirectoryScreenState extends State<AmcDirectoryScreen> with SingleTick
                                 ),
                                 child: Text(
                                   isIas ? 'IAS' : isIps ? 'IPS' : 'Senior Officer',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeColor),
+                                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: badgeColor),
                                 ),
                               ),
                             ],
@@ -1009,12 +1013,23 @@ class _AmcDirectoryScreenState extends State<AmcDirectoryScreen> with SingleTick
                       child: TextButton.icon(
                         onPressed: () => _callPhone(o['phone'] as String),
                         icon: const Icon(Icons.phone_rounded, size: 14),
-                        label: Text(o['phone'] as String, style: const TextStyle(fontSize: 11)),
+                        label: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(o['phone'] as String, style: const TextStyle(fontSize: 11)),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         o['email'] as String,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.end,
                         style: const TextStyle(fontSize: 11, color: CivicColors.onSurfaceVariant),
                       ),
