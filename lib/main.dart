@@ -15,11 +15,15 @@ import 'screens/permissions_screen.dart';
 import 'screens/auth_screens.dart';
 import 'screens/main_shell_screen.dart';
 
+import 'services/firebase_ai_logic_service.dart';
+
 // Exports for backward-compatibility with tests & external references
 export 'theme/civic_colors.dart';
 export 'models/civic_models.dart';
 export 'services/amc_database.dart';
 export 'services/firestore_service.dart';
+export 'services/firebase_ai_logic_service.dart';
+export 'services/google_maps_service.dart';
 export 'repositories/civic_repository.dart';
 export 'blocs/tickets/tickets_bloc.dart';
 export 'blocs/tickets/tickets_event.dart';
@@ -42,16 +46,18 @@ export 'screens/ticket_detail_screen.dart';
 export 'screens/profile_screen.dart';
 export 'screens/crew_tracking_screen.dart';
 export 'screens/feedback_screen.dart';
+export 'screens/civic_map_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase (civic-complaint-agent-dee84)
+  // Initialize Firebase (civic-complaint-agent-dee84) & AI Logic
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     FirestoreService.instance.init();
+    FirebaseAiLogicService.instance.init();
   } catch (e) {
     debugPrint('Firebase initialization notice: $e');
   }

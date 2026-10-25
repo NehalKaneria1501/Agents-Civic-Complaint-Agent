@@ -293,6 +293,8 @@ enum ToolCallType {
   lookupWardDepartment,
   createTicket,
   fetchStatus,
+  googleMapsRoute,
+  firebaseAiLogic,
 }
 
 class ToolCallLog {
@@ -319,6 +321,8 @@ class ChatMessage {
   final SampleIncident? attachedPhoto;
   final CivicTicket? ticketSummary;
   final List<ToolCallLog> toolCalls;
+  final String? googleMapsUrl;
+  final String? googleMapsDirectionsUrl;
 
   ChatMessage({
     required this.id,
@@ -328,5 +332,7 @@ class ChatMessage {
     this.attachedPhoto,
     this.ticketSummary,
     this.toolCalls = const [],
+    this.googleMapsUrl,
+    this.googleMapsDirectionsUrl,
   });
 }

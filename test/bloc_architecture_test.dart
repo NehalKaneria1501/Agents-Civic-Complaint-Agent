@@ -6,6 +6,8 @@ import 'package:agentsciviccomplaintagent/blocs/tickets/tickets_event.dart';
 import 'package:agentsciviccomplaintagent/blocs/tickets/tickets_state.dart';
 import 'package:agentsciviccomplaintagent/blocs/chat/chat_bloc.dart';
 import 'package:agentsciviccomplaintagent/blocs/chat/chat_state.dart';
+import 'package:agentsciviccomplaintagent/services/google_maps_service.dart';
+import 'package:agentsciviccomplaintagent/services/firebase_ai_logic_service.dart';
 
 void main() {
   group('ProfileCubit (MVVM Citizen ViewModel)', () {
@@ -119,4 +121,32 @@ void main() {
       );
     });
   });
+
+  group('GoogleMapsService & FirebaseAiLogicService', () {
+    test('parseGpsCoordinates parses degrees and directions accurately', () {
+      final coords = GoogleMapsService.parseGpsCoordinates('23.0365° N, 72.5126° E (Ward 4)');
+      expect(coords, isNotNull);
+      expect(coords!.key, closeTo(23.0365, 0.001));
+      expect(coords.value, closeTo(72.5126, 0.001));
+    });
+
+    test('parseGpsCoordinates returns Ahmedabad HQ fallback on malformed string', () {
+      final coords = GoogleMapsService.parseGpsCoordinates('unknown location');
+      expect(coords, isNotNull);
+      expect(coords!.key, closeTo(23.0225, 0.001));
+      expect(coords.value, closeTo(72.5714, 0.001));
+    });
+
+    test('FirebaseAiLogicService analyzeIncident returns valid structured result', () async {
+      final result = await FirebaseAiLogicService.instance.analyzeIncident(
+        userText: 'Broken asphalt on road',
+      );
+      expect(result.title, isNotEmpty);
+      expect(result.googleMapsUrl, contains('google.com/maps'));
+      expect(result.googleMapsDirectionsUrl, contains('google.com/maps/dir'));
+      expect(result.latitude, isNotNull);
+      expect(result.longitude, isNotNull);
+    });
+  });
 }
+

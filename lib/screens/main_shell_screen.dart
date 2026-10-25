@@ -8,6 +8,7 @@ import 'profile_screen.dart';
 import 'ticket_detail_screen.dart';
 import 'crew_tracking_screen.dart';
 import 'feedback_screen.dart';
+import 'civic_map_screen.dart';
 import '../widgets/civic_app_logo.dart';
 
 // ==========================================
@@ -98,6 +99,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ),
           const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.map_rounded, color: CivicColors.primary),
+            tooltip: 'AMC Civic Google Maps View',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CivicMapScreen(
+                    onSelectTicket: (t) {
+                      Navigator.pop(context);
+                      setState(() {
+                        _activeTicketForDetails = t;
+                      });
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded, color: CivicColors.onSurfaceVariant),
             onPressed: () {

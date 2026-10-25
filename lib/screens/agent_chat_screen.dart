@@ -6,6 +6,7 @@ import '../blocs/chat/chat_event.dart';
 import '../blocs/chat/chat_state.dart';
 import '../models/civic_models.dart';
 import '../services/amc_database.dart';
+import '../services/google_maps_service.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_photo_renderer.dart';
 
@@ -274,6 +275,10 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
                         const SizedBox(height: 10),
                         _buildToolDiagnosticsList(msg.toolCalls),
                       ],
+                      if (msg.googleMapsUrl != null) ...[
+                        const SizedBox(height: 10),
+                        _buildGoogleMapsCard(msg),
+                      ],
                       if (msg.ticketSummary != null) ...[
                         const SizedBox(height: 12),
                         _buildTrackingIdCard(msg.ticketSummary!),
@@ -291,6 +296,86 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
     );
   }
 
+  Widget _buildGoogleMapsCard(ChatMessage msg) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F0FE),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF1E88E5).withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E88E5).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.place_rounded, color: Color(0xFF1E88E5), size: 16),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Google Maps Platform Live Location',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1565C0)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    GoogleMapsService.openMapLocation(
+                      latitude: 23.0365,
+                      longitude: 72.5126,
+                      label: msg.ticketSummary?.title ?? 'Civic Hazard Location',
+                    );
+                  },
+                  icon: const Icon(Icons.map_rounded, size: 14),
+                  label: const Text('View on Map', style: TextStyle(fontSize: 11)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF1565C0),
+                    side: const BorderSide(color: Color(0xFF1E88E5)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: const Size(40, 32),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    GoogleMapsService.openDirections(
+                      destinationLat: 23.0365,
+                      destinationLng: 72.5126,
+                    );
+                  },
+                  icon: const Icon(Icons.directions_rounded, size: 14),
+                  label: const Text('Directions', style: TextStyle(fontSize: 11)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E88E5),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: const Size(40, 32),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildToolDiagnosticsList(List<ToolCallLog> toolLogs) {
     return Container(
       padding: const EdgeInsets.all(10),
@@ -300,8 +385,19 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
       ),
       child: Column(
         children: toolLogs.map((tool) {
+          IconData icon = Icons.check_circle_rounded;
+          Color iconColor = CivicColors.primary;
           String label = tool.toolName;
-          if (tool.type == ToolCallType.analyzeImage) {
+
+          if (tool.type == ToolCallType.firebaseAiLogic) {
+            icon = Icons.auto_awesome_rounded;
+            iconColor = const Color(0xFF6750A4);
+            label = 'Firebase AI Logic (Gemini 1.5 Flash): ${tool.result['category'] ?? 'Damage Triage'}';
+          } else if (tool.type == ToolCallType.googleMapsRoute) {
+            icon = Icons.map_rounded;
+            iconColor = const Color(0xFF1E88E5);
+            label = 'Google Maps GIS: Pinpointed coordinates & repair squad route';
+          } else if (tool.type == ToolCallType.analyzeImage) {
             label = 'Image Analysis: Pothole detected (severity high)';
           } else if (tool.type == ToolCallType.lookupWardDepartment) {
             label = 'Ward Lookup: Ward 4 - Central Zone';
@@ -315,7 +411,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
             padding: const EdgeInsets.symmetric(vertical: 3),
             child: Row(
               children: [
-                const Icon(Icons.check_circle_rounded, color: CivicColors.primary, size: 16),
+                Icon(icon, color: iconColor, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

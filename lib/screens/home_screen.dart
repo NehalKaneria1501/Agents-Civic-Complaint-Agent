@@ -5,6 +5,7 @@ import '../models/civic_models.dart';
 import '../services/amc_database.dart';
 import '../theme/civic_colors.dart';
 import '../widgets/civic_photo_renderer.dart';
+import 'civic_map_screen.dart';
 
 // ==========================================
 // SCREEN: HOME SCREEN (AMC CIVIC DASHBOARD)
@@ -139,6 +140,10 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // AI Agent Status Banner
           _buildAgentBanner(),
+          const SizedBox(height: 12),
+
+          // Google Maps GIS & Live Navigation Platform Card
+          _buildGisMapsCard(context),
           const SizedBox(height: 18),
 
           // Municipal Civic Services Image Slider / Carousel
@@ -234,6 +239,78 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const Icon(Icons.verified, color: CivicColors.primary, size: 22),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGisMapsCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F7FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF1E88E5).withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E88E5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.map_rounded, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Google Maps GIS',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0D47A1)),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E88E5).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Live Platform',
+                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF1E88E5)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Explore municipal hazard pins & squad navigation',
+                  style: TextStyle(fontSize: 11.5, color: CivicColors.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CivicMapScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E88E5),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: const Size(50, 32),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Open Map', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
