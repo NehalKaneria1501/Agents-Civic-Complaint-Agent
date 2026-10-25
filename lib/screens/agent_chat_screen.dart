@@ -17,8 +17,15 @@ import '../widgets/civic_photo_renderer.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final Function(CivicTicket)? onViewTicket;
+  final SampleIncident? initialIncident;
+  final VoidCallback? onBack;
 
-  const AgentChatScreen({super.key, this.onViewTicket});
+  const AgentChatScreen({
+    super.key,
+    this.onViewTicket,
+    this.initialIncident,
+    this.onBack,
+  });
 
   @override
   State<AgentChatScreen> createState() => _AgentChatScreenState();
@@ -27,6 +34,19 @@ class AgentChatScreen extends StatefulWidget {
 class _AgentChatScreenState extends State<AgentChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialIncident != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleUserMessage(
+          'Please analyze this ${widget.initialIncident!.title} hazard and file a municipal ticket with live GPS routing.',
+          samplePhoto: widget.initialIncident,
+        );
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -137,6 +157,16 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
       ),
       child: Row(
         children: [
+          if (widget.onBack != null) ...[
+            IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: CivicColors.onSurface, size: 22),
+              onPressed: widget.onBack,
+              tooltip: 'Back',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 10),
+          ],
           Container(
             width: 40,
             height: 40,

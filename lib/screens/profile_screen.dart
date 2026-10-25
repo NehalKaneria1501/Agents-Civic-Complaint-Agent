@@ -53,6 +53,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Widget _buildDefaultAvatar() {
+    return Container(
+      color: CivicColors.primary,
+      alignment: Alignment.center,
+      child: const Icon(Icons.person, color: Colors.white, size: 52),
+    );
+  }
+
   void _showPhotoOptions(BuildContext context, ProfileState state) {
     showModalBottomSheet(
       context: context,
@@ -290,27 +298,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // Profile Avatar with Clickable Camera / Gallery Badge
+              // Profile Avatar with Clickable Camera / Gallery Badge (Overflow-Proof & Downsampled)
               Center(
                 child: Stack(
                   children: [
                     Container(
+                      width: 96,
+                      height: 96,
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: CivicColors.primary, width: 2.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: CivicColors.primary.withValues(alpha: 0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: CircleAvatar(
-                        radius: 44,
-                        backgroundColor: CivicColors.primary,
-                        backgroundImage: state.photoPath != null
-                            ? (!kIsWeb && File(state.photoPath!).existsSync()
-                                ? FileImage(File(state.photoPath!)) as ImageProvider
-                                : NetworkImage(state.photoPath!))
-                            : null,
-                        child: state.photoPath == null
-                            ? const Icon(Icons.person, color: Colors.white, size: 52)
-                            : null,
+                      child: ClipOval(
+                        child: SizedBox(
+                          width: 90,
+                          height: 90,
+                          child: state.photoPath != null && state.photoPath!.isNotEmpty
+                              ? (!kIsWeb && File(state.photoPath!).existsSync()
+                                  ? Image.file(
+                                      File(state.photoPath!),
+                                      fit: BoxFit.cover,
+                                      cacheWidth: 300,
+                                      cacheHeight: 300,
+                                      errorBuilder: (ctx, err, stack) => _buildDefaultAvatar(),
+                                    )
+                                  : Image.network(
+                                      state.photoPath!,
+                                      fit: BoxFit.cover,
+                                      cacheWidth: 300,
+                                      cacheHeight: 300,
+                                      errorBuilder: (ctx, err, stack) => _buildDefaultAvatar(),
+                                    ))
+                              : _buildDefaultAvatar(),
+                        ),
                       ),
                     ),
                     Positioned(

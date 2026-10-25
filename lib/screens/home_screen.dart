@@ -798,6 +798,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'Road & Asphalt',
         Icons.car_crash_rounded,
         CivicColors.primary,
+        sampleIncidents[0].photoUrl,
       ),
       _buildCategoryTile(
         context,
@@ -806,6 +807,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'Waste & Dumps',
         Icons.delete_outline_rounded,
         CivicColors.tertiary,
+        sampleIncidents[1].photoUrl,
       ),
       _buildCategoryTile(
         context,
@@ -814,6 +816,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'Outages & Poles',
         Icons.lightbulb_outline_rounded,
         CivicColors.secondary,
+        sampleIncidents[2].photoUrl,
       ),
       _buildCategoryTile(
         context,
@@ -822,6 +825,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'Drainage & Floods',
         Icons.water_drop_outlined,
         CivicColors.primaryContainer,
+        sampleIncidents[3].photoUrl,
       ),
       _buildCategoryTile(
         context,
@@ -830,6 +834,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'Pipeline Leaks',
         Icons.plumbing_rounded,
         const Color(0xFF0284C7),
+        'https://images.unsplash.com/photo-1541888946425-d0fbb186f5f8?auto=format&fit=crop&w=600&q=80',
       ),
       _buildCategoryTile(
         context,
@@ -838,6 +843,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'Estate & Land',
         Icons.storefront_rounded,
         const Color(0xFF9333EA),
+        'https://images.unsplash.com/photo-1590856029826-c7a73142bbf1?auto=format&fit=crop&w=600&q=80',
       ),
       _buildCategoryTile(
         context,
@@ -846,6 +852,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'CNCD Cattle Squad',
         Icons.pets_rounded,
         const Color(0xFFD97706),
+        'https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&w=600&q=80',
       ),
       _buildCategoryTile(
         context,
@@ -854,6 +861,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'Malaria & Dengue',
         Icons.pest_control_rounded,
         const Color(0xFF10B981),
+        'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=600&q=80',
       ),
     ];
 
@@ -912,7 +920,7 @@ class _HomeScreenState extends State<HomeScreen> {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 1.28,
+            childAspectRatio: 1.15,
             children: displayed,
           ),
         ),
@@ -927,49 +935,131 @@ class _HomeScreenState extends State<HomeScreen> {
     String subtitle,
     IconData icon,
     Color color,
+    String photoUrl,
   ) {
     return InkWell(
       onTap: () => _openCameraSimulationModal(context, incident),
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: CivicColors.surfaceLow,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: CivicColors.outlineVariant.withValues(alpha: 0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: CivicColors.onSurface),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: CivicColors.onSurfaceVariant),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Topic Background Image with safe offline fallback
+              CivicPhotoRenderer(
+                photoUrl: photoUrl,
+                category: title,
+                title: title,
+                height: double.infinity,
+                width: double.infinity,
+                showBadge: false,
+              ),
+
+              // Gradient Overlay for Readability & High Contrast
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.20),
+                      Colors.black.withValues(alpha: 0.55),
+                      Colors.black.withValues(alpha: 0.90),
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
+
+              // Content Layout (Icon Pill on Top Left, Titles on Bottom)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.90),
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.3),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: Icon(icon, color: Colors.white, size: 17),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Report',
+                                style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(width: 2),
+                              Icon(Icons.arrow_forward_ios_rounded, size: 8, color: Colors.white),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.5,
+                            color: Colors.white,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

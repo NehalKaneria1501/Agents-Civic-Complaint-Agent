@@ -162,6 +162,13 @@ class _CivicAgentAppState extends State<CivicAgentApp> {
               surface: CivicColors.surface,
             ),
             fontFamily: 'Inter',
+            snackBarTheme: SnackBarThemeData(
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF0F172A),
+              contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 6,
+            ),
           ),
           home: _buildCurrentNavScreen(),
         ),

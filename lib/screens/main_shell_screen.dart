@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/civic_models.dart';
 import '../theme/civic_colors.dart';
+import '../blocs/profile/profile_cubit.dart';
+import '../blocs/profile/profile_state.dart';
 import 'home_screen.dart';
 import 'agent_chat_screen.dart';
 import 'tickets_screen.dart';
@@ -29,6 +33,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   bool _isViewingProfile = false;
   CivicTicket? _activeTicketForDetails;
   CivicTicket? _activeTicketForLiveTracking;
+  SampleIncident? _activeIncidentForAgent;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +42,27 @@ class _MainShellScreenState extends State<MainShellScreen> {
       resizeToAvoidBottomInset: true,
       appBar: _buildStitchTopAppBar(),
       body: _buildCurrentScreen(),
+      floatingActionButton: (isKeyboardOpen || _isViewingProfile)
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'civic_chatbot_fab',
+              onPressed: () {
+                setState(() {
+                  _isViewingProfile = false;
+                  _activeTicketForDetails = null;
+                  _activeTicketForLiveTracking = null;
+                  _currentIndex = 2; // Jump to CivicBot AI Chatbot
+                });
+              },
+              backgroundColor: CivicColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              icon: const Icon(Icons.smart_toy_rounded, size: 20),
+              label: const Text(
+                'CivicBot AI',
+                style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.2),
+              ),
+            ),
       bottomNavigationBar: isKeyboardOpen ? null : _buildStitchBottomNavBar(),
     );
   }
@@ -100,59 +126,72 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.map_rounded, color: CivicColors.primary),
-            tooltip: 'AMC Civic Google Maps View',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CivicMapScreen(
-                    onSelectTicket: (t) {
-                      Navigator.pop(context);
-                      setState(() {
-                        _activeTicketForDetails = t;
-                      });
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.notifications_none_rounded, color: CivicColors.onSurfaceVariant),
+            tooltip: 'Municipal notifications',
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('All municipal notifications caught up.')),
               );
             },
           ),
-          Tooltip(
-            message: 'Citizen Profile & Settings',
-            child: InkWell(
-              onTap: () {
-                setState(() {
-                  _isViewingProfile = true;
-                  _activeTicketForDetails = null;
-                  _activeTicketForLiveTracking = null;
-                });
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: CivicColors.primary, width: 2),
+          BlocBuilder<ProfileCubit, ProfileState>(
+            builder: (context, profileState) {
+              final hasPhoto = profileState.photoPath != null && profileState.photoPath!.isNotEmpty;
+              return Tooltip(
+                message: 'Citizen Profile & Settings',
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isViewingProfile = true;
+                      _activeTicketForDetails = null;
+                      _activeTicketForLiveTracking = null;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: CivicColors.primary, width: 2),
+                    ),
+                    child: ClipOval(
+                      child: SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: hasPhoto
+                            ? (profileState.photoPath!.startsWith('http')
+                                ? Image.network(
+                                    profileState.photoPath!,
+                                    fit: BoxFit.cover,
+                                    cacheWidth: 100,
+                                    cacheHeight: 100,
+                                    errorBuilder: (_, _, _) => _buildTopBarDefaultAvatar(),
+                                  )
+                                : Image.file(
+                                    File(profileState.photoPath!),
+                                    fit: BoxFit.cover,
+                                    cacheWidth: 100,
+                                    cacheHeight: 100,
+                                    errorBuilder: (_, _, _) => _buildTopBarDefaultAvatar(),
+                                  ))
+                            : _buildTopBarDefaultAvatar(),
+                      ),
+                    ),
+                  ),
                 ),
-                child: const CircleAvatar(
-                  radius: 14,
-                  backgroundColor: CivicColors.primary,
-                  child: Icon(Icons.person, color: Colors.white, size: 17),
-                ),
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTopBarDefaultAvatar() {
+    return Container(
+      color: CivicColors.primary,
+      alignment: Alignment.center,
+      child: const Icon(Icons.person, color: Colors.white, size: 17),
     );
   }
 
@@ -178,7 +217,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         onAskAgent: () {
           setState(() {
             _activeTicketForDetails = null;
-            _currentIndex = 1; // Go to Agent Chat
+            _currentIndex = 2; // Go to Agent Chat
           });
         },
         onTrackCrew: () {
@@ -195,7 +234,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
           onOpenAgentWithIncident: (incident) {
             setState(() {
               _isViewingProfile = false;
-              _currentIndex = 1;
+              _activeIncidentForAgent = incident;
+              _currentIndex = 2; // Forward incident to CivicBot AI Chat
             });
           },
           onOpenTicket: (ticket) {
@@ -207,19 +247,34 @@ class _MainShellScreenState extends State<MainShellScreen> {
           onOpenFeedback: () {
             setState(() {
               _isViewingProfile = false;
-              _currentIndex = 3; // Switch to Feedback / Complaint form
+              _currentIndex = 4; // Switch to Feedback / Complaint form
             });
           },
         );
       case 1:
-        return AgentChatScreen(
-          onViewTicket: (ticket) {
+        return CivicMapScreen(
+          onSelectTicket: (ticket) {
             setState(() {
               _activeTicketForDetails = ticket;
             });
           },
         );
       case 2:
+        return AgentChatScreen(
+          initialIncident: _activeIncidentForAgent,
+          onViewTicket: (ticket) {
+            setState(() {
+              _activeTicketForDetails = ticket;
+            });
+          },
+          onBack: () {
+            setState(() {
+              _activeIncidentForAgent = null;
+              _currentIndex = 0;
+            });
+          },
+        );
+      case 3:
         return TicketsLedgerScreen(
           onOpenTicket: (ticket) {
             setState(() {
@@ -227,11 +282,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
             });
           },
         );
-      case 3:
+      case 4:
         return FeedbackComplaintScreen(
           onComplaintSubmitted: () {
             setState(() {
-              _currentIndex = 2; // Jump to Tickets ledger to track new grievance
+              _currentIndex = 3; // Jump to Tickets ledger to track new grievance
             });
           },
         );
@@ -255,14 +310,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(0, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.smart_toy_rounded, 'Agent'),
-              _buildNavItem(2, Icons.receipt_long_rounded, 'Tickets'),
-              _buildNavItem(3, Icons.rate_review_rounded, 'Feedback'),
+              _buildNavItem(1, Icons.map_rounded, 'Maps'),
+              _buildNavItem(2, Icons.smart_toy_rounded, 'Agent'),
+              _buildNavItem(3, Icons.receipt_long_rounded, 'Tickets'),
+              _buildNavItem(4, Icons.rate_review_rounded, 'Feedback'),
             ],
           ),
         ),
@@ -288,7 +344,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? CivicColors.primaryContainer.withValues(alpha: 0.25) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -316,4 +372,5 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 }
+
 
