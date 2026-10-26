@@ -77,7 +77,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Change Profile Picture', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: CivicColors.onSurface)),
+                    const Expanded(
+                      child: Text(
+                        'Change Profile Picture',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
                   ],
                 ),

@@ -224,7 +224,12 @@ class _SignInScreenState extends State<SignInScreen> {
                           children: [
                             Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
                             SizedBox(width: 8),
-                            Text('Signed in with Google Account successfully!'),
+                            Expanded(
+                              child: Text(
+                                'Signed in with Google Account successfully!',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                         backgroundColor: Color(0xFF1E8E3E),

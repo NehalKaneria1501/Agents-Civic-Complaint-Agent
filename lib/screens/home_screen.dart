@@ -1201,22 +1201,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: CivicColors.primary.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: CivicColors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 22),
                           ),
-                          child: const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 22),
-                        ),
-                        const SizedBox(width: 10),
-                        const Text(
-                          'Snap & Report Issue',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
-                        ),
-                      ],
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'Snap & Report Issue',
+                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded),
@@ -1285,7 +1290,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Or try a demo scenario:', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: CivicColors.onSurfaceVariant)),
+                    const Expanded(
+                      child: Text(
+                        'Or try a demo scenario:',
+                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: CivicColors.onSurfaceVariant),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     TextButton(
                       style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                       onPressed: () {
@@ -1337,22 +1348,27 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: CivicColors.primary.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: CivicColors.primary.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 22),
                         ),
-                        child: const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 22),
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'AI Camera Viewfinder',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'AI Camera Viewfinder',
+                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
