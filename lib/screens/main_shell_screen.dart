@@ -29,8 +29,9 @@ class MainShellScreen extends StatefulWidget {
 }
 
 class _MainShellScreenState extends State<MainShellScreen> {
-  int _currentIndex = 0;
+  int _currentIndex = 0; // 0: Home, 1: Maps, 2: Tickets, 3: Feedback
   bool _isViewingProfile = false;
+  bool _isViewingAgentChat = false;
   CivicTicket? _activeTicketForDetails;
   CivicTicket? _activeTicketForLiveTracking;
   SampleIncident? _activeIncidentForAgent;
@@ -42,16 +43,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
       resizeToAvoidBottomInset: true,
       appBar: _buildStitchTopAppBar(),
       body: _buildCurrentScreen(),
-      floatingActionButton: (isKeyboardOpen || _isViewingProfile)
+      floatingActionButton: (isKeyboardOpen || _isViewingProfile || _isViewingAgentChat)
           ? null
           : FloatingActionButton.extended(
               heroTag: 'civic_chatbot_fab',
               onPressed: () {
                 setState(() {
                   _isViewingProfile = false;
+                  _isViewingAgentChat = true;
                   _activeTicketForDetails = null;
                   _activeTicketForLiveTracking = null;
-                  _currentIndex = 2; // Jump to CivicBot AI Chatbot
                 });
               },
               backgroundColor: CivicColors.primary,
@@ -108,14 +109,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
       backgroundColor: CivicColors.surfaceContainerLowest.withValues(alpha: 0.95),
       elevation: 0,
       scrolledUnderElevation: 1,
-      title: Row(
+      title: const Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const CivicAppLogo(
+          CivicAppLogo(
             size: 32,
             showShadow: false,
           ),
-          const SizedBox(width: 10),
-          const Text(
+          SizedBox(width: 10),
+          Text(
             'CivicAgent',
             style: TextStyle(
               fontSize: 18,
@@ -124,66 +126,69 @@ class _MainShellScreenState extends State<MainShellScreen> {
               letterSpacing: -0.3,
             ),
           ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: CivicColors.onSurfaceVariant),
-            tooltip: 'Municipal notifications',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('All municipal notifications caught up.')),
-              );
-            },
-          ),
-          BlocBuilder<ProfileCubit, ProfileState>(
-            builder: (context, profileState) {
-              final hasPhoto = profileState.photoPath != null && profileState.photoPath!.isNotEmpty;
-              return Tooltip(
-                message: 'Citizen Profile & Settings',
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _isViewingProfile = true;
-                      _activeTicketForDetails = null;
-                      _activeTicketForLiveTracking = null;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: CivicColors.primary, width: 2),
-                    ),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: hasPhoto
-                            ? (profileState.photoPath!.startsWith('http')
-                                ? Image.network(
-                                    profileState.photoPath!,
-                                    fit: BoxFit.cover,
-                                    cacheWidth: 100,
-                                    cacheHeight: 100,
-                                    errorBuilder: (_, _, _) => _buildTopBarDefaultAvatar(),
-                                  )
-                                : Image.file(
-                                    File(profileState.photoPath!),
-                                    fit: BoxFit.cover,
-                                    cacheWidth: 100,
-                                    cacheHeight: 100,
-                                    errorBuilder: (_, _, _) => _buildTopBarDefaultAvatar(),
-                                  ))
-                            : _buildTopBarDefaultAvatar(),
-                      ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_none_rounded, color: CivicColors.onSurfaceVariant),
+          tooltip: 'Municipal notifications',
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('All municipal notifications caught up.')),
+            );
+          },
+        ),
+        BlocBuilder<ProfileCubit, ProfileState>(
+          builder: (context, profileState) {
+            final hasPhoto = profileState.photoPath != null && profileState.photoPath!.isNotEmpty;
+            return Tooltip(
+              message: 'Citizen Profile & Settings',
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _isViewingProfile = true;
+                    _isViewingAgentChat = false;
+                    _activeTicketForDetails = null;
+                    _activeTicketForLiveTracking = null;
+                  });
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: CivicColors.primary, width: 2),
+                  ),
+                  child: ClipOval(
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: hasPhoto
+                          ? (profileState.photoPath!.startsWith('http')
+                              ? Image.network(
+                                  profileState.photoPath!,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 100,
+                                  cacheHeight: 100,
+                                  errorBuilder: (_, _, _) => _buildTopBarDefaultAvatar(),
+                                )
+                              : Image.file(
+                                  File(profileState.photoPath!),
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 100,
+                                  cacheHeight: 100,
+                                  errorBuilder: (_, _, _) => _buildTopBarDefaultAvatar(),
+                                ))
+                          : _buildTopBarDefaultAvatar(),
                     ),
                   ),
                 ),
-              );
-            },
-          ),
-        ],
-      ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 
@@ -217,12 +222,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
         onAskAgent: () {
           setState(() {
             _activeTicketForDetails = null;
-            _currentIndex = 2; // Go to Agent Chat
+            _isViewingAgentChat = true; // Open CivicBot Agent Chat
           });
         },
         onTrackCrew: () {
           setState(() {
             _activeTicketForLiveTracking = _activeTicketForDetails;
+          });
+        },
+      );
+    }
+
+    if (_isViewingAgentChat) {
+      return AgentChatScreen(
+        initialIncident: _activeIncidentForAgent,
+        onViewTicket: (ticket) {
+          setState(() {
+            _isViewingAgentChat = false;
+            _activeTicketForDetails = ticket;
+          });
+        },
+        onBack: () {
+          setState(() {
+            _isViewingAgentChat = false;
+            _activeIncidentForAgent = null;
           });
         },
       );
@@ -234,8 +257,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
           onOpenAgentWithIncident: (incident) {
             setState(() {
               _isViewingProfile = false;
+              _isViewingAgentChat = true;
               _activeIncidentForAgent = incident;
-              _currentIndex = 2; // Forward incident to CivicBot AI Chat
             });
           },
           onOpenTicket: (ticket) {
@@ -247,12 +270,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
           onOpenFeedback: () {
             setState(() {
               _isViewingProfile = false;
-              _currentIndex = 4; // Switch to Feedback / Complaint form
+              _currentIndex = 3; // Switch to Feedback / Complaint form
             });
           },
         );
       case 1:
         return CivicMapScreen(
+          isEmbedded: true,
           onSelectTicket: (ticket) {
             setState(() {
               _activeTicketForDetails = ticket;
@@ -260,21 +284,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
           },
         );
       case 2:
-        return AgentChatScreen(
-          initialIncident: _activeIncidentForAgent,
-          onViewTicket: (ticket) {
-            setState(() {
-              _activeTicketForDetails = ticket;
-            });
-          },
-          onBack: () {
-            setState(() {
-              _activeIncidentForAgent = null;
-              _currentIndex = 0;
-            });
-          },
-        );
-      case 3:
         return TicketsLedgerScreen(
           onOpenTicket: (ticket) {
             setState(() {
@@ -282,11 +291,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
             });
           },
         );
-      case 4:
+      case 3:
         return FeedbackComplaintScreen(
           onComplaintSubmitted: () {
             setState(() {
-              _currentIndex = 3; // Jump to Tickets ledger to track new grievance
+              _currentIndex = 2; // Jump to Tickets ledger to track new grievance
             });
           },
         );
@@ -310,15 +319,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(0, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.map_rounded, 'Maps'),
-              _buildNavItem(2, Icons.smart_toy_rounded, 'Agent'),
-              _buildNavItem(3, Icons.receipt_long_rounded, 'Tickets'),
-              _buildNavItem(4, Icons.rate_review_rounded, 'Feedback'),
+              Expanded(child: _buildNavItem(0, Icons.home_rounded, 'Home')),
+              Expanded(child: _buildNavItem(1, Icons.map_rounded, 'Maps')),
+              Expanded(child: _buildNavItem(2, Icons.receipt_long_rounded, 'Tickets')),
+              Expanded(child: _buildNavItem(3, Icons.rate_review_rounded, 'Feedback')),
             ],
           ),
         ),
@@ -328,6 +335,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = !_isViewingProfile &&
+        !_isViewingAgentChat &&
         _currentIndex == index &&
         _activeTicketForDetails == null &&
         _activeTicketForLiveTracking == null;
@@ -336,6 +344,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       onTap: () {
         setState(() {
           _isViewingProfile = false;
+          _isViewingAgentChat = false;
           _activeTicketForDetails = null;
           _activeTicketForLiveTracking = null;
           _currentIndex = index;
@@ -344,7 +353,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? CivicColors.primaryContainer.withValues(alpha: 0.25) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -358,12 +367,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
               color: isSelected ? CivicColors.onPrimaryContainer : CivicColors.onSurfaceVariant,
             ),
             const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? CivicColors.onPrimaryContainer : CivicColors.onSurfaceVariant,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? CivicColors.onPrimaryContainer : CivicColors.onSurfaceVariant,
+                ),
               ),
             ),
           ],

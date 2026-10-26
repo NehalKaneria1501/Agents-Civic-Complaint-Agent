@@ -98,10 +98,10 @@ void main() {
     expect(find.text('Quick Categories'), findsOneWidget);
     expect(find.text('Recent Ward Ticker'), findsOneWidget);
 
-    // 2. Tap on "Agent" tab in bottom navigation
-    final agentNavFinder = find.text('Agent');
-    expect(agentNavFinder, findsOneWidget);
-    await tester.tap(agentNavFinder);
+    // 2. Tap on CivicBot AI Floating Action Button
+    final agentFabFinder = find.byType(FloatingActionButton);
+    expect(agentFabFinder, findsOneWidget);
+    await tester.tap(agentFabFinder);
     await tester.pumpAndSettle();
 
     // Verify Agent Chat Screen

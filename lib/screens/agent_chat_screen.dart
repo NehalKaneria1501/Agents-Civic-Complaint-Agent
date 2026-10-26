@@ -183,9 +183,13 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
               children: [
                 Row(
                   children: [
-                    const Text(
-                      'CivicBot Assistant',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: CivicColors.onSurface),
+                    const Flexible(
+                      child: Text(
+                        'CivicBot Assistant',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: CivicColors.onSurface),
+                      ),
                     ),
                     const SizedBox(width: 6),
                     Container(
@@ -197,6 +201,8 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
                 ),
                 Text(
                   'Active Municipal Case #${ticket.ticketId}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 11.5, color: CivicColors.onSurfaceVariant),
                 ),
               ],

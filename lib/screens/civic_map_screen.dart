@@ -12,8 +12,9 @@ import '../theme/civic_colors.dart';
 
 class CivicMapScreen extends StatefulWidget {
   final Function(CivicTicket)? onSelectTicket;
+  final bool isEmbedded;
 
-  const CivicMapScreen({super.key, this.onSelectTicket});
+  const CivicMapScreen({super.key, this.onSelectTicket, this.isEmbedded = false});
 
   @override
   State<CivicMapScreen> createState() => _CivicMapScreenState();
@@ -81,14 +82,16 @@ class _CivicMapScreenState extends State<CivicMapScreen> {
 
     return Scaffold(
       backgroundColor: CivicColors.surface,
-      appBar: AppBar(
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('AMC Civic GIS Map', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-            Text('Integrated with Google Maps Platform', style: TextStyle(fontSize: 11, color: CivicColors.onSurfaceVariant)),
-          ],
-        ),
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(
+              title: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('AMC Civic GIS Map', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                  Text('Integrated with Google Maps Platform', style: TextStyle(fontSize: 11, color: CivicColors.onSurfaceVariant)),
+                ],
+              ),
         actions: [
           IconButton(
             icon: const Icon(Icons.my_location_rounded, color: CivicColors.primary),
