@@ -1188,144 +1188,150 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showPhotoCaptureSheet(BuildContext context, {SampleIncident? initialIncident}) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: CivicColors.primary.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: CivicColors.primary.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 22),
                             ),
-                            child: const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 22),
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'Snap & Report Issue',
-                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
-                              overflow: TextOverflow.ellipsis,
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Snap & Report Issue',
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Capture live hazard with your camera or select an inspection photo from gallery.',
-                  style: TextStyle(fontSize: 12.5, color: CivicColors.onSurfaceVariant),
-                ),
-                const SizedBox(height: 16),
-
-                // 1. Camera Option Tile
-                ListTile(
-                  tileColor: CivicColors.surfaceContainer.withValues(alpha: 0.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: const BoxDecoration(
-                      color: CivicColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 22),
-                  ),
-                  title: const Text('Open Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  subtitle: const Text('Capture live photo of pothole, garbage, or streetlight', style: TextStyle(fontSize: 12)),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                  onTap: () async {
-                    Navigator.pop(ctx);
-                    final photo = await pickCivicPhoto(context: context, source: ImageSource.camera);
-                    if (photo != null && context.mounted) {
-                      _showInspectionViewfinderModal(context, photo);
-                    }
-                  },
-                ),
-                const SizedBox(height: 10),
-
-                // 2. Gallery Option Tile
-                ListTile(
-                  tileColor: CivicColors.surfaceContainer.withValues(alpha: 0.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: const BoxDecoration(
-                      color: CivicColors.secondary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 22),
-                  ),
-                  title: const Text('Upload from Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  subtitle: const Text('Select existing evidence photo from device album', style: TextStyle(fontSize: 12)),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                  onTap: () async {
-                    Navigator.pop(ctx);
-                    final photo = await pickCivicPhoto(context: context, source: ImageSource.gallery);
-                    if (photo != null && context.mounted) {
-                      _showInspectionViewfinderModal(context, photo);
-                    }
-                  },
-                ),
-                const SizedBox(height: 14),
-
-                // 3. Preset Simulation Option (for Emulators / Testing)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Or try a demo scenario:',
-                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: CivicColors.onSurfaceVariant),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    TextButton(
-                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _showInspectionViewfinderModal(context, initialIncident ?? sampleIncidents[0]);
-                      },
-                      child: const Text('Use Simulation', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: sampleIncidents.map((s) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ActionChip(
-                          avatar: Icon(s.icon, size: 14, color: s.accentColor),
-                          label: Text(s.title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _showInspectionViewfinderModal(context, s);
-                          },
+                          ],
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Capture live hazard with your camera or select an inspection photo from gallery.',
+                    style: TextStyle(fontSize: 12.5, color: CivicColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 1. Camera Option Tile
+                  ListTile(
+                    tileColor: CivicColors.surfaceContainer.withValues(alpha: 0.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: CivicColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 22),
+                    ),
+                    title: const Text('Open Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Capture live photo of pothole, garbage, or streetlight', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final photo = await pickCivicPhoto(context: context, source: ImageSource.camera);
+                      if (photo != null && context.mounted) {
+                        _showInspectionViewfinderModal(context, photo);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // 2. Gallery Option Tile
+                  ListTile(
+                    tileColor: CivicColors.surfaceContainer.withValues(alpha: 0.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: CivicColors.secondary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 22),
+                    ),
+                    title: const Text('Upload from Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Select existing evidence photo from device album', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final photo = await pickCivicPhoto(context: context, source: ImageSource.gallery);
+                      if (photo != null && context.mounted) {
+                        _showInspectionViewfinderModal(context, photo);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 3. Preset Simulation Option (for Emulators / Testing)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Or try a demo scenario:',
+                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: CivicColors.onSurfaceVariant),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _showInspectionViewfinderModal(context, initialIncident ?? sampleIncidents[0]);
+                        },
+                        child: const Text('Use Simulation', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: sampleIncidents.map((s) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ActionChip(
+                            avatar: Icon(s.icon, size: 14, color: s.accentColor),
+                            label: Text(s.title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _showInspectionViewfinderModal(context, s);
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -1340,97 +1346,104 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(22),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.90,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: CivicColors.primary.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 22),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: CivicColors.primary.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.photo_camera_rounded, color: CivicColors.primary, size: 22),
+                            ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'AI Camera Viewfinder',
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text(
-                            'AI Camera Viewfinder',
-                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(ctx),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Photo attached with live geotagging and HUD reticle.',
+                    style: TextStyle(fontSize: 12, color: CivicColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Viewfinder Container with Resilient CivicPhotoRenderer
+                  CivicPhotoRenderer(
+                    photoUrl: incident.photoUrl,
+                    category: incident.departmentKey,
+                    title: incident.title,
+                    gpsCoords: incident.gpsCoords,
+                    height: 180,
+                    isViewfinder: true,
+                    badge: 'Live Geotag Camera',
+                  ),
+                  const SizedBox(height: 18),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _showPhotoCaptureSheet(context, initialIncident: incident);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Retake / Change', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            if (widget.onOpenAgentWithIncident != null) {
+                              widget.onOpenAgentWithIncident!(incident);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: CivicColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Analyze & File', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Photo attached with live geotagging and HUD reticle.',
-                style: TextStyle(fontSize: 12, color: CivicColors.onSurfaceVariant),
-              ),
-              const SizedBox(height: 16),
-
-              // Viewfinder Container with Resilient CivicPhotoRenderer
-              CivicPhotoRenderer(
-                photoUrl: incident.photoUrl,
-                category: incident.departmentKey,
-                title: incident.title,
-                gpsCoords: incident.gpsCoords,
-                height: 180,
-                isViewfinder: true,
-                badge: 'Live Geotag Camera',
-              ),
-              const SizedBox(height: 18),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _showPhotoCaptureSheet(context, initialIncident: incident);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Retake / Change', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        if (widget.onOpenAgentWithIncident != null) {
-                          widget.onOpenAgentWithIncident!(incident);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: CivicColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Analyze & File', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         );
       },

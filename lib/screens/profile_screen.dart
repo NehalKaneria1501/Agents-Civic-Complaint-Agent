@@ -64,71 +64,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showPhotoOptions(BuildContext context, ProfileState state) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Change Profile Picture',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
-                        overflow: TextOverflow.ellipsis,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Change Profile Picture',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: CivicColors.onSurface),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: CivicColors.primary,
-                    child: Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
+                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                    ],
                   ),
-                  title: const Text('Take Photo from Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                  subtitle: const Text('Capture a live citizen profile picture', style: TextStyle(fontSize: 11.5)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickProfilePhoto(context, ImageSource.camera);
-                  },
-                ),
-                ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: CivicColors.secondary,
-                    child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
-                  ),
-                  title: const Text('Choose Photo from Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                  subtitle: const Text('Select existing photo from phone gallery', style: TextStyle(fontSize: 11.5)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickProfilePhoto(context, ImageSource.gallery);
-                  },
-                ),
-                if (state.photoPath != null)
+                  const SizedBox(height: 8),
                   ListTile(
                     leading: const CircleAvatar(
-                      backgroundColor: CivicColors.errorContainer,
-                      child: Icon(Icons.delete_outline_rounded, color: CivicColors.error, size: 20),
+                      backgroundColor: CivicColors.primary,
+                      child: Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
                     ),
-                    title: const Text('Remove Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: CivicColors.error)),
-                    subtitle: const Text('Revert to default municipal avatar', style: TextStyle(fontSize: 11.5)),
+                    title: const Text('Take Photo from Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                    subtitle: const Text('Capture a live citizen profile picture', style: TextStyle(fontSize: 11.5)),
                     onTap: () {
                       Navigator.pop(ctx);
-                      context.read<ProfileCubit>().removePhoto();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Profile photo reset.')),
-                      );
+                      _pickProfilePhoto(context, ImageSource.camera);
                     },
                   ),
-              ],
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: CivicColors.secondary,
+                      child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
+                    ),
+                    title: const Text('Choose Photo from Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                    subtitle: const Text('Select existing photo from phone gallery', style: TextStyle(fontSize: 11.5)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickProfilePhoto(context, ImageSource.gallery);
+                    },
+                  ),
+                  if (state.photoPath != null)
+                    ListTile(
+                      leading: const CircleAvatar(
+                        backgroundColor: CivicColors.errorContainer,
+                        child: Icon(Icons.delete_outline_rounded, color: CivicColors.error, size: 20),
+                      ),
+                      title: const Text('Remove Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: CivicColors.error)),
+                      subtitle: const Text('Revert to default municipal avatar', style: TextStyle(fontSize: 11.5)),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        context.read<ProfileCubit>().removePhoto();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Profile photo reset.')),
+                        );
+                      },
+                    ),
+                ],
+              ),
             ),
           ),
         );
