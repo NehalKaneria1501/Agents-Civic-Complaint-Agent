@@ -56,30 +56,47 @@ export 'screens/amc_directory_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Offline DB, SQLite, and Firebase concurrently to eliminate cold startup blocking
-  await Future.wait([
-    () async {
-      try {
-        await OfflineDatabaseService.instance.init();
-        await SqliteDatabaseService.instance.init();
-      } catch (e) {
-        debugPrint('Offline/SQLite database notice: $e');
-      }
-    }(),
-    () async {
-      try {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-        FirestoreService.instance.init();
-        FirebaseAiLogicService.instance.init();
-      } catch (e) {
-        debugPrint('Firebase initialization notice: $e');
-      }
-    }(),
-  ]);
-
+  // Draw first frame immediately to prevent OS/MIUI activity resume timeout
   runApp(const CivicAgentApp());
+
+  // Concurrently initialize Offline DB, SQLite, and Firebase in the background
+  _initServicesAsync();
+}
+
+void _initServicesAsync() {
+  Future.microtask(() async {
+    try {
+      await Future.wait([
+        () async {
+          try {
+            await OfflineDatabaseService.instance.init();
+            await SqliteDatabaseService.instance.init();
+          } catch (e) {
+            debugPrint('Offline/SQLite database notice: $e');
+          }
+        }(),
+        () async {
+          try {
+            await Firebase.initializeApp(
+              options: DefaultFirebaseOptions.currentPlatform,
+            );
+            FirestoreService.instance.init();
+            FirebaseAiLogicService.instance.init();
+          } catch (e) {
+            debugPrint('Firebase initialization notice: $e');
+          }
+        }(),
+      ]).timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {
+          debugPrint('Service initialization safely transitioned to background execution');
+          return [];
+        },
+      );
+    } catch (e) {
+      debugPrint('Async service initialization error: $e');
+    }
+  });
 }
 
 // Global Alias for tests
