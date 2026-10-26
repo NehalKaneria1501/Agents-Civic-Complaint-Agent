@@ -303,6 +303,7 @@ class _CivicPhotoRendererState extends State<CivicPhotoRenderer> {
         return Image.network(
           url,
           fit: BoxFit.cover,
+          cacheWidth: 600,
           errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
         );
       } else {
@@ -311,6 +312,7 @@ class _CivicPhotoRendererState extends State<CivicPhotoRenderer> {
           return Image.file(
             File(cleanPath),
             fit: BoxFit.cover,
+            cacheWidth: 600,
             errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
           );
         } catch (_) {
@@ -323,6 +325,7 @@ class _CivicPhotoRendererState extends State<CivicPhotoRenderer> {
     return Image.network(
       url,
       fit: BoxFit.cover,
+      cacheWidth: 600,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return Container(

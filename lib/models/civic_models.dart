@@ -249,9 +249,9 @@ Future<SampleIncident?> pickCivicPhoto({
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: source,
-      maxWidth: 1920,
-      maxHeight: 1080,
-      imageQuality: 85,
+      maxWidth: 1280,
+      maxHeight: 960,
+      imageQuality: 80,
     );
     if (picked == null) return null;
 

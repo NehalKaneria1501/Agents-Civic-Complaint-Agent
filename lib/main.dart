@@ -56,24 +56,28 @@ export 'screens/amc_directory_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Offline & SQLite Relational Databases (local persistence ledger)
-  try {
-    await OfflineDatabaseService.instance.init();
-    await SqliteDatabaseService.instance.init();
-  } catch (e) {
-    debugPrint('Offline/SQLite database notice: $e');
-  }
-
-  // Initialize Firebase (civic-complaint-agent-dee84) & AI Logic
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    FirestoreService.instance.init();
-    FirebaseAiLogicService.instance.init();
-  } catch (e) {
-    debugPrint('Firebase initialization notice: $e');
-  }
+  // Initialize Offline DB, SQLite, and Firebase concurrently to eliminate cold startup blocking
+  await Future.wait([
+    () async {
+      try {
+        await OfflineDatabaseService.instance.init();
+        await SqliteDatabaseService.instance.init();
+      } catch (e) {
+        debugPrint('Offline/SQLite database notice: $e');
+      }
+    }(),
+    () async {
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        FirestoreService.instance.init();
+        FirebaseAiLogicService.instance.init();
+      } catch (e) {
+        debugPrint('Firebase initialization notice: $e');
+      }
+    }(),
+  ]);
 
   runApp(const CivicAgentApp());
 }
